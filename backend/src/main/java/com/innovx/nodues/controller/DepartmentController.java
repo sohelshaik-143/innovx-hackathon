@@ -7,16 +7,15 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*; // Changed to .* to include @CrossOrigin
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/departments")
 @RequiredArgsConstructor
-// 1. ADD THIS LINE: This allows your Vercel frontend to talk to this controller
-@CrossOrigin(origins = "https://rkvalley.vercel.app", allowedHeaders = "*", methods = {RequestMethod.GET, RequestMethod.POST})
-@Tag(name = "Departments", description = "Query department information, contacts")
+@CrossOrigin(origins = "*")
+@Tag(name = "Departments", description = "Query department information, contacts, and performance KPIs")
 public class DepartmentController {
 
     private final AdminService adminService;
