@@ -17,28 +17,12 @@ services:
       - key: APP_CORS_ALLOWED_ORIGINS
         value: "https://rkvalley.vercel.app"
       - key: DB_HOST
-        fromDatabase:
-          name: innovx-postgres
-          property: host
+        sync: false
       - key: DB_PORT
-        fromDatabase:
-          name: innovx-postgres
-          property: port
+        value: "5432"
       - key: DB_NAME
-        fromDatabase:
-          name: innovx-postgres
-          property: database
+        sync: false
       - key: DB_USER
-        fromDatabase:
-          name: innovx-postgres
-          property: user
+        sync: false
       - key: DB_PASSWORD
-        fromDatabase:
-          name: innovx-postgres
-          property: password
-
-databases:
-  - name: innovx-postgres
-    region: singapore
-    plan: free
-    databaseName: nodues_db
+        sync: false
