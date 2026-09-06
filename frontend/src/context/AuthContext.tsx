@@ -45,6 +45,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [unreadCount, setUnreadCount] = useState<number>(0);
 
   const logout = useCallback(() => {
+    console.log('[AUTH] Logging out user and purging local session');
     localStorage.removeItem('nodues_token');
     localStorage.removeItem('nodues_user');
     setUser(null);
@@ -79,11 +80,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         rollNo: profile.rollNo,
         program: profile.program,
       };
+
+      console.log(`[AUTH ME] User authenticated -> Username: ${updatedUser.username} | Roles: [${updatedUser.roles.join(', ')}] | Department: ${updatedUser.departmentName || 'N/A'}`);
+      console.log(`[ROUTER] Resolved dashboard route -> ${getDashboardRoute(updatedUser)}`);
+
       localStorage.setItem('nodues_user', JSON.stringify(updatedUser));
       setUser(updatedUser);
       return updatedUser;
     } catch (err: any) {
-      console.warn('Failed to verify user profile from backend on mount:', err);
+      console.warn('[AUTH ME] Verification failed:', err?.response?.status || err.message);
       if (err.response?.status === 401) {
         localStorage.removeItem('nodues_token');
         localStorage.removeItem('nodues_user');
@@ -155,6 +160,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         head: authData.isHead ?? false,
         studentId: authData.studentId,
       };
+
+      console.log(`[AUTH LOGIN] Login success -> Username: ${userInfo.username} | Roles: [${userInfo.roles.join(', ')}] | Dept: ${userInfo.departmentName || 'N/A'}`);
+      console.log(`[ROUTER] Post-login target route -> ${getDashboardRoute(userInfo)}`);
 
       localStorage.setItem('nodues_user', JSON.stringify(userInfo));
       setUser(userInfo);

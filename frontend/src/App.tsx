@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { AppShell } from './components/AppShell';
+import { AuthenticationGate } from './components/AuthenticationGate';
 import { LoginPage } from './pages/LoginPage';
 import { StudentDashboard } from './pages/StudentDashboard';
 import { DepartmentDashboard } from './pages/DepartmentDashboard';
@@ -13,30 +14,13 @@ import { AccountPage } from './pages/AccountPage';
 import { RegisterPage } from './pages/RegisterPage';
 import { NotFoundPage } from './pages/NotFoundPage';
 import { ForbiddenPage } from './pages/ForbiddenPage';
-import { Skeleton } from './components/ui/Skeleton';
 import { getDashboardRoute } from './utils/roleUtils';
-
-const LoadingScreen: React.FC = () => (
-  <div className="min-h-screen bg-ivory-100 flex items-center justify-center p-6">
-    <div className="max-w-md w-full space-y-4 text-center">
-      <div className="w-12 h-12 rounded-2xl bg-olive-600 text-white flex items-center justify-center font-bold text-lg mx-auto animate-bounce shadow-md">
-        CC
-      </div>
-      <Skeleton className="h-6 w-48 mx-auto" />
-      <p className="text-xs text-slate-500 font-medium">Verifying institutional credentials with backend...</p>
-    </div>
-  </div>
-);
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode; requiredRole?: string }> = ({
   children,
   requiredRole,
 }) => {
-  const { user, isLoading } = useAuth();
-
-  if (isLoading) {
-    return <LoadingScreen />;
-  }
+  const { user } = useAuth();
 
   if (!user) {
     return <Navigate to="/login" replace />;
@@ -50,11 +34,7 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode; requiredRole?: strin
 };
 
 const HomeRedirect: React.FC = () => {
-  const { user, isLoading } = useAuth();
-
-  if (isLoading) {
-    return <LoadingScreen />;
-  }
+  const { user } = useAuth();
 
   if (!user) {
     return <Navigate to="/login" replace />;
@@ -147,7 +127,9 @@ export default function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
-        <AppContent />
+        <AuthenticationGate>
+          <AppContent />
+        </AuthenticationGate>
       </AuthProvider>
     </BrowserRouter>
   );
