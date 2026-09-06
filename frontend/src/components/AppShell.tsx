@@ -40,8 +40,8 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
   const getRoleBadge = () => {
     if (!user) return 'Guest';
     if (isRole('ROLE_ADMIN')) return 'University Admin';
-    if (isRole('ROLE_DEPARTMENT_HEAD')) return `Head of ${user.departmentName || 'Department'}`;
-    if (isRole('ROLE_DEPARTMENT_STAFF')) return `${user.departmentName || 'Department'} Officer`;
+    if (isRole('ROLE_DEPARTMENT_HEAD')) return `Head of ${user.departmentName || user.departmentCode || 'Department'}`;
+    if (isRole('ROLE_DEPARTMENT_STAFF')) return `${user.departmentName || user.departmentCode || 'Department'} Officer`;
     if (isRole('ROLE_STUDENT')) return 'Student Candidate';
     return 'Authorized User';
   };

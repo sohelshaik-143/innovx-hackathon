@@ -1,6 +1,23 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import api from '../api/client';
 import { User, AuthResponse } from '../types';
+
+interface UserSummaryDto {
+  id: string;
+  username: string;
+  email: string;
+  fullName: string;
+  roles: string[];
+  active: boolean;
+  demo: boolean;
+  departmentId?: string;
+  departmentCode?: string;
+  departmentName?: string;
+  head: boolean;
+  studentId?: string;
+  rollNo?: string;
+  program?: string;
+}
 
 interface AuthContextType {
   user: User | null;
@@ -9,6 +26,7 @@ interface AuthContextType {
   login: (username: string, password: string) => Promise<AuthResponse>;
   register: (registerData: any) => Promise<AuthResponse>;
   logout: () => void;
+  refreshUser: () => Promise<User | null>;
   switchDemoUser: (username: string, password: string) => Promise<void>;
   unreadCount: number;
   refreshUnreadCount: () => Promise<void>;
@@ -17,32 +35,97 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [token, setToken] = useState<string | null>(() => localStorage.getItem('nodues_token'));
   const [user, setUser] = useState<User | null>(() => {
     const saved = localStorage.getItem('nodues_user');
     return saved ? JSON.parse(saved) : null;
   });
-  const [token, setToken] = useState<string | null>(() => localStorage.getItem('nodues_token'));
-  const [isLoading, setIsLoading] = useState(false);
-  const [unreadCount, setUnreadCount] = useState(0);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [unreadCount, setUnreadCount] = useState<number>(0);
 
-  const refreshUnreadCount = async () => {
-    if (!token) return;
+  const logout = useCallback(() => {
+    localStorage.removeItem('nodues_token');
+    localStorage.removeItem('nodues_user');
+    setUser(null);
+    setToken(null);
+    setUnreadCount(0);
+    window.location.href = '/login';
+  }, []);
+
+  const refreshUser = useCallback(async (): Promise<User | null> => {
+    const currentToken = localStorage.getItem('nodues_token');
+    if (!currentToken) {
+      setUser(null);
+      setIsLoading(false);
+      return null;
+    }
+    try {
+      const res = await api.get<UserSummaryDto>('/auth/me');
+      const profile = res.data;
+      const updatedUser: User = {
+        id: profile.id,
+        username: profile.username,
+        email: profile.email,
+        fullName: profile.fullName,
+        roles: profile.roles && profile.roles.length > 0 ? profile.roles : ['ROLE_STUDENT'],
+        active: profile.active,
+        demo: profile.demo,
+        departmentId: profile.departmentId,
+        departmentCode: profile.departmentCode,
+        departmentName: profile.departmentName,
+        head: profile.head,
+        studentId: profile.studentId,
+        rollNo: profile.rollNo,
+        program: profile.program,
+      };
+      localStorage.setItem('nodues_user', JSON.stringify(updatedUser));
+      setUser(updatedUser);
+      return updatedUser;
+    } catch (err: any) {
+      console.warn('Failed to verify user profile from backend on mount:', err);
+      if (err.response?.status === 401) {
+        localStorage.removeItem('nodues_token');
+        localStorage.removeItem('nodues_user');
+        setUser(null);
+        setToken(null);
+      }
+      return null;
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  const refreshUnreadCount = useCallback(async () => {
+    const currentToken = localStorage.getItem('nodues_token');
+    if (!currentToken) return;
     try {
       const res = await api.get<{ unreadCount: number }>('/notifications/unread-count');
-      setUnreadCount(res.data.unreadCount);
+      setUnreadCount(res.data.unreadCount || 0);
     } catch {
-      // ignore
+      // ignore notification count errors
     }
-  };
+  }, []);
+
+  // Initial mount verification
+  useEffect(() => {
+    const initAuth = async () => {
+      const savedToken = localStorage.getItem('nodues_token');
+      if (savedToken) {
+        await refreshUser();
+      } else {
+        setIsLoading(false);
+      }
+    };
+    initAuth();
+  }, [refreshUser]);
 
   useEffect(() => {
-    if (token) {
+    if (token && user) {
       refreshUnreadCount();
-      // Poll notifications every 30s
       const interval = setInterval(refreshUnreadCount, 30000);
       return () => clearInterval(interval);
     }
-  }, [token]);
+  }, [token, user, refreshUnreadCount]);
 
   const login = async (username: string, password: string): Promise<AuthResponse> => {
     setIsLoading(true);
@@ -59,21 +142,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       const userInfo: User = {
         id: authData.userId || 'unknown',
-        username: authData.username || username || 'unknown',
+        username: authData.username || username,
         email: authData.email || 'unknown',
         fullName: authData.fullName || 'User',
-        roles: authData.roles && Array.isArray(authData.roles) ? authData.roles : ['ROLE_STUDENT'],
+        roles: authData.roles && authData.roles.length > 0 ? authData.roles : ['ROLE_STUDENT'],
         active: true,
-        demo: authData.isDemo ?? (authData as any).demo ?? false,
+        demo: authData.isDemo ?? false,
         departmentId: authData.departmentId,
         departmentCode: authData.departmentCode,
         departmentName: authData.departmentName,
-        head: authData.isHead ?? (authData as any).head ?? false,
+        head: authData.isHead ?? false,
         studentId: authData.studentId,
       };
 
       localStorage.setItem('nodues_user', JSON.stringify(userInfo));
       setUser(userInfo);
+
+      // Verify authoritative profile from backend asynchronously
+      refreshUser().catch(() => {});
+
       return authData;
     } catch (error) {
       setToken(null);
@@ -101,16 +188,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       const userInfo: User = {
         id: authData.userId || 'unknown',
-        username: authData.username || registerData.username || 'unknown',
-        email: authData.email || registerData.email || 'unknown',
-        fullName: authData.fullName || registerData.fullName || 'User',
-        roles: authData.roles && Array.isArray(authData.roles) ? authData.roles : ['ROLE_STUDENT'],
+        username: authData.username || registerData.username,
+        email: authData.email || registerData.email,
+        fullName: authData.fullName || registerData.fullName,
+        roles: authData.roles && authData.roles.length > 0 ? authData.roles : ['ROLE_STUDENT'],
         active: true,
-        demo: authData.isDemo ?? (authData as any).demo ?? false,
+        demo: authData.isDemo ?? false,
         departmentId: authData.departmentId,
         departmentCode: authData.departmentCode,
         departmentName: authData.departmentName,
-        head: authData.isHead ?? (authData as any).head ?? false,
+        head: authData.isHead ?? false,
         studentId: authData.studentId,
       };
 
@@ -128,18 +215,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const logout = () => {
-    localStorage.removeItem('nodues_token');
-    localStorage.removeItem('nodues_user');
-    setUser(null);
-    setToken(null);
-    setUnreadCount(0);
-    window.location.href = '/login';
-  };
-
   const switchDemoUser = async (username: string, password: string) => {
     const authData = await login(username, password);
-    // Route to appropriate dashboard
     if (authData.roles.includes('ROLE_ADMIN')) {
       window.location.href = '/admin';
     } else if (authData.roles.includes('ROLE_DEPARTMENT_HEAD')) {
@@ -160,6 +237,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         login,
         register,
         logout,
+        refreshUser,
         switchDemoUser,
         unreadCount,
         refreshUnreadCount,

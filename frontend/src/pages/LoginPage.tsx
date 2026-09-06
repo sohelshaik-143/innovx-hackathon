@@ -14,6 +14,7 @@ import {
   Sparkles
 } from 'lucide-react';
 import { Button } from '../components/ui/Button';
+import { getDashboardRoute } from '../utils/roleUtils';
 
 export const LoginPage: React.FC = () => {
   const { login, switchDemoUser, isLoading } = useAuth();
@@ -28,15 +29,8 @@ export const LoginPage: React.FC = () => {
     setError(null);
     try {
       const auth = await login(username, password);
-      if (auth.roles.includes('ROLE_ADMIN')) {
-        navigate('/admin');
-      } else if (auth.roles.includes('ROLE_DEPARTMENT_HEAD')) {
-        navigate('/head');
-      } else if (auth.roles.includes('ROLE_DEPARTMENT_STAFF')) {
-        navigate('/department');
-      } else {
-        navigate('/student');
-      }
+      const userObj = { roles: auth.roles } as any;
+      navigate(getDashboardRoute(userObj));
     } catch (err: any) {
       console.error('Login error:', err);
       if (err.response?.data?.message) {

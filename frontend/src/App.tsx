@@ -12,33 +12,55 @@ import { CertificateViewPage } from './pages/CertificateViewPage';
 import { AccountPage } from './pages/AccountPage';
 import { RegisterPage } from './pages/RegisterPage';
 import { NotFoundPage } from './pages/NotFoundPage';
+import { ForbiddenPage } from './pages/ForbiddenPage';
+import { Skeleton } from './components/ui/Skeleton';
+import { getDashboardRoute } from './utils/roleUtils';
+
+const LoadingScreen: React.FC = () => (
+  <div className="min-h-screen bg-ivory-100 flex items-center justify-center p-6">
+    <div className="max-w-md w-full space-y-4 text-center">
+      <div className="w-12 h-12 rounded-2xl bg-olive-600 text-white flex items-center justify-center font-bold text-lg mx-auto animate-bounce shadow-md">
+        CC
+      </div>
+      <Skeleton className="h-6 w-48 mx-auto" />
+      <p className="text-xs text-slate-500 font-medium">Verifying institutional credentials with backend...</p>
+    </div>
+  </div>
+);
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode; requiredRole?: string }> = ({
   children,
   requiredRole,
 }) => {
-  const { user } = useAuth();
+  const { user, isLoading } = useAuth();
+
+  if (isLoading) {
+    return <LoadingScreen />;
+  }
+
   if (!user) {
     return <Navigate to="/login" replace />;
   }
+
   if (requiredRole && !user.roles?.includes(requiredRole)) {
-    if (user.roles?.includes('ROLE_ADMIN')) return <Navigate to="/admin" replace />;
-    if (user.roles?.includes('ROLE_DEPARTMENT_HEAD')) return <Navigate to="/head" replace />;
-    if (user.roles?.includes('ROLE_DEPARTMENT_STAFF')) return <Navigate to="/department" replace />;
-    return <Navigate to="/student" replace />;
+    return <ForbiddenPage />;
   }
+
   return <AppShell>{children}</AppShell>;
 };
 
 const HomeRedirect: React.FC = () => {
-  const { user } = useAuth();
+  const { user, isLoading } = useAuth();
+
+  if (isLoading) {
+    return <LoadingScreen />;
+  }
+
   if (!user) {
     return <Navigate to="/login" replace />;
   }
-  if (user.roles?.includes('ROLE_ADMIN')) return <Navigate to="/admin" replace />;
-  if (user.roles?.includes('ROLE_DEPARTMENT_HEAD')) return <Navigate to="/head" replace />;
-  if (user.roles?.includes('ROLE_DEPARTMENT_STAFF')) return <Navigate to="/department" replace />;
-  return <Navigate to="/student" replace />;
+
+  return <Navigate to={getDashboardRoute(user)} replace />;
 };
 
 export const AppContent: React.FC = () => {
@@ -49,6 +71,7 @@ export const AppContent: React.FC = () => {
       <Route path="/create-account" element={<RegisterPage />} />
       <Route path="/verify-certificate" element={<PublicVerifyPage />} />
       <Route path="/verify-certificate/:certificateNumber" element={<PublicVerifyPage />} />
+      <Route path="/403" element={<ForbiddenPage />} />
 
       <Route
         path="/student"
