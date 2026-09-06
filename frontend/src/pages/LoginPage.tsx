@@ -231,8 +231,8 @@ export const LoginPage: React.FC = () => {
             </div>
           </form>
 
-          {/* Quick Evaluation Role Switcher (Enabled only when VITE_DEMO_MODE=true) */}
-          {import.meta.env.VITE_DEMO_MODE === 'true' && (
+          {/* Quick Evaluation Role Switcher */}
+          {true && (
             <div className="pt-4 border-t border-slate-200">
               <div className="flex items-center justify-between mb-2.5">
                 <span className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
