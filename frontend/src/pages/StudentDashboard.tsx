@@ -20,7 +20,7 @@ import {
   Sparkles,
   RefreshCw
 } from 'lucide-react';
-import { format, formatDistanceToNow } from 'date-fns';
+import { safeFormat, safeFormatDistanceToNow } from '../utils/dateUtils';
 import { Card } from '../components/ui/Card';
 import { StatCard } from '../components/ui/StatCard';
 import { Button } from '../components/ui/Button';
@@ -200,7 +200,7 @@ export const StudentDashboard: React.FC = () => {
                       Clearance Request #{activeRequest.certificateNumber || activeRequest.id.substring(0, 8)}
                     </h3>
                     <p className="text-xs text-slate-500">
-                      Initiated on {format(new Date(activeRequest.createdAt), 'MMM dd, yyyy • hh:mm a')}
+                      Initiated on {safeFormat(activeRequest.createdAt, 'MMM dd, yyyy • hh:mm a')}
                     </p>
                   </div>
                 </div>
@@ -283,6 +283,53 @@ export const StudentDashboard: React.FC = () => {
                         <StatusBadge status={task.status} size="sm" />
                       </div>
 
+                      {/* Delay Information Banner */}
+                      {task.delayInfo && (
+                        <div className="p-3.5 rounded-xl bg-amber-50/90 border border-amber-200 text-xs space-y-2">
+                          <div className="flex items-center justify-between font-bold text-amber-800">
+                            <span className="flex items-center gap-1.5">
+                              <Clock className="w-3.5 h-3.5 text-amber-600" />
+                              <span>Delay Reason: {task.delayInfo.category?.replace(/_/g, ' ')}</span>
+                            </span>
+                            {task.delayInfo.expectedResolutionDate && (
+                              <span className="text-[11px] text-amber-700 font-medium">
+                                Expected: {safeFormat(task.delayInfo.expectedResolutionDate, 'MMM dd, yyyy')}
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-amber-900 leading-relaxed font-medium">
+                            {task.delayInfo.explanation}
+                          </p>
+                          {task.delayInfo.nextAction && (
+                            <div className="pt-1.5 border-t border-amber-200/80 text-[11px] text-amber-800">
+                              <span className="font-semibold">Next Action: </span>
+                              <span>{task.delayInfo.nextAction}</span>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Rejection Information Banner */}
+                      {task.rejectionInfo && (
+                        <div className="p-3.5 rounded-xl bg-rose-50/90 border border-rose-200 text-xs space-y-2">
+                          <div className="flex items-center justify-between font-bold text-rose-800">
+                            <span className="flex items-center gap-1.5">
+                              <AlertTriangle className="w-3.5 h-3.5 text-rose-600" />
+                              <span>Hold / Dues Issue: {task.rejectionInfo.reasonTitle}</span>
+                            </span>
+                          </div>
+                          <p className="text-rose-900 leading-relaxed font-medium">
+                            {task.rejectionInfo.explanation}
+                          </p>
+                          {task.rejectionInfo.requiredStudentAction && (
+                            <div className="pt-1.5 border-t border-rose-200/80 text-[11px] text-rose-800">
+                              <span className="font-semibold">Required Action: </span>
+                              <span>{task.rejectionInfo.requiredStudentAction}</span>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
                       {/* Staff remarks */}
                       <div className="p-3 rounded-xl bg-ivory-50 border border-slate-200/60 text-xs space-y-1">
                         <span className="font-bold text-slate-700 block">Department Verification Remarks:</span>
@@ -298,7 +345,7 @@ export const StudentDashboard: React.FC = () => {
                           <span>{task.officialEmail || 'department@campus.edu'}</span>
                         </span>
                         <span className="text-slate-400">
-                          {task.completedAt ? formatDistanceToNow(new Date(task.completedAt), { addSuffix: true }) : 'Awaiting audit'}
+                          {safeFormatDistanceToNow(task.completedAt, { addSuffix: true }, 'Awaiting audit')}
                         </span>
                       </div>
                     </div>

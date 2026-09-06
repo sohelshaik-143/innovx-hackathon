@@ -10,7 +10,7 @@ import {
   ArrowRight,
   ShieldAlert
 } from 'lucide-react';
-import { format } from 'date-fns';
+import { safeFormat } from '../utils/dateUtils';
 
 interface TimelineViewProps {
   events: ClearanceTimelineEvent[];
@@ -100,7 +100,7 @@ export const TimelineView: React.FC<TimelineViewProps> = ({ events }) => {
                       {event.title}
                     </h4>
                     <time className="text-[11px] text-slate-500 whitespace-nowrap">
-                      {format(new Date(event.timestamp), 'dd MMM yyyy, hh:mm a')}
+                      {safeFormat(event.timestamp, 'dd MMM yyyy, hh:mm a', 'Recent')}
                     </time>
                   </div>
                   {event.departmentName && (

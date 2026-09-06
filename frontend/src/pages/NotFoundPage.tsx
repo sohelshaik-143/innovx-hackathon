@@ -3,17 +3,14 @@ import { Link, useNavigate } from 'react-router-dom';
 import { ShieldAlert, ArrowLeft, LayoutDashboard, GraduationCap } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { useAuth } from '../context/AuthContext';
+import { getDashboardRoute } from '../utils/roleUtils';
 
 export const NotFoundPage: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
 
   const getDashboardUrl = () => {
-    if (!user) return '/login';
-    if (user.roles?.includes('ROLE_ADMIN')) return '/admin';
-    if (user.roles?.includes('ROLE_DEPARTMENT_HEAD')) return '/head';
-    if (user.roles?.includes('ROLE_DEPARTMENT_STAFF')) return '/department';
-    return '/student';
+    return getDashboardRoute(user);
   };
 
   return (

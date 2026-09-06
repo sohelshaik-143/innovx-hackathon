@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { AppShell } from './components/AppShell';
 import { AuthenticationGate } from './components/AuthenticationGate';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { LoginPage } from './pages/LoginPage';
 import { StudentDashboard } from './pages/StudentDashboard';
 import { DepartmentDashboard } from './pages/DepartmentDashboard';
@@ -125,12 +126,14 @@ export const AppContent: React.FC = () => {
 
 export default function App() {
   return (
-    <BrowserRouter>
-      <AuthProvider>
-        <AuthenticationGate>
-          <AppContent />
-        </AuthenticationGate>
-      </AuthProvider>
-    </BrowserRouter>
+    <ErrorBoundary>
+      <BrowserRouter>
+        <AuthProvider>
+          <AuthenticationGate>
+            <AppContent />
+          </AuthenticationGate>
+        </AuthProvider>
+      </BrowserRouter>
+    </ErrorBoundary>
   );
 }

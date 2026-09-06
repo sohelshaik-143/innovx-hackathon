@@ -22,7 +22,6 @@ import java.util.List;
 import java.util.Set;
 
 @Component
-@Profile({"dev", "test", "default"})
 @RequiredArgsConstructor
 @Slf4j
 public class DataInitializer implements CommandLineRunner {
@@ -60,18 +59,45 @@ public class DataInitializer implements CommandLineRunner {
                     .lastName("Administrator")
                     .active(true)
                     .demo(true)
-                    .roles(Set.of(adminRole))
+                    .roles(new HashSet<>(Set.of(adminRole)))
                     .createdAt(LocalDateTime.now())
                     .updatedAt(LocalDateTime.now())
                     .build();
             return userRepository.save(admin);
         });
 
-        // 2. Fetch Departments
-        Department library = departmentRepository.findByCode("LIBRARY").orElse(null);
-        Department hostels = departmentRepository.findByCode("HOSTELS").orElse(null);
-        Department sports = departmentRepository.findByCode("SPORTS").orElse(null);
-        Department accounts = departmentRepository.findByCode("ACCOUNTS").orElse(null);
+        // Self-heal admin user: ensure exact role and purge spurious student or staff entries
+        if (adminUser.getRoles() == null || !adminUser.getRoles().contains(adminRole) || adminUser.getRoles().size() > 1) {
+            adminUser.setRoles(new HashSet<>(Set.of(adminRole)));
+            userRepository.save(adminUser);
+        }
+        studentRepository.findByUserId(adminUser.getId()).ifPresent(studentRepository::delete);
+        departmentStaffRepository.findByUserId(adminUser.getId()).ifPresent(departmentStaffRepository::delete);
+
+        // 2. Fetch / Ensure Departments
+        Department library = departmentRepository.findByCode("LIBRARY").orElseGet(() -> departmentRepository.save(
+                Department.builder().id("dept-library").code("LIBRARY").name("Central Library & Learning Resource Center")
+                        .description("Verifies borrowed books, inter-library loans, journals, and overdue fines.")
+                        .officialEmail("library.clearance@campus.edu").officeLocation("Central Library Building, Ground Floor, Desk 4")
+                        .officialPhone("+1 (555) 234-5671").active(true).createdAt(LocalDateTime.now()).updatedAt(LocalDateTime.now()).build()));
+
+        Department hostels = departmentRepository.findByCode("HOSTELS").orElseGet(() -> departmentRepository.save(
+                Department.builder().id("dept-hostels").code("HOSTELS").name("Hostel Administration & Student Housing")
+                        .description("Verifies room clearance, mess bills, furniture handover, and hostel property.")
+                        .officialEmail("housing.clearance@campus.edu").officeLocation("Student Residences Admin Block, Room 102")
+                        .officialPhone("+1 (555) 234-5672").active(true).createdAt(LocalDateTime.now()).updatedAt(LocalDateTime.now()).build()));
+
+        Department sports = departmentRepository.findByCode("SPORTS").orElseGet(() -> departmentRepository.save(
+                Department.builder().id("dept-sports").code("SPORTS").name("Sports & Athletics Department")
+                        .description("Verifies issued sports equipment, gym memberships, and team kits.")
+                        .officialEmail("athletics.clearance@campus.edu").officeLocation("Indoor Sports Complex, Office 12")
+                        .officialPhone("+1 (555) 234-5673").active(true).createdAt(LocalDateTime.now()).updatedAt(LocalDateTime.now()).build()));
+
+        Department accounts = departmentRepository.findByCode("ACCOUNTS").orElseGet(() -> departmentRepository.save(
+                Department.builder().id("dept-accounts").code("ACCOUNTS").name("Accounts & Financial Services Division")
+                        .description("Verifies tuition fees, scholarship adjustments, lab security deposits, and dues.")
+                        .officialEmail("accounts.clearance@campus.edu").officeLocation("Administrative Block, Counter 2B")
+                        .officialPhone("+1 (555) 234-5674").active(true).createdAt(LocalDateTime.now()).updatedAt(LocalDateTime.now()).build()));
 
         // 3. Seed Department Staff & Heads
         User libraryStaff = createStaffUser("staff.library", "staff123", "library.staff@campus.edu",
@@ -238,15 +264,33 @@ public class DataInitializer implements CommandLineRunner {
             return userRepository.save(u);
         });
 
-        if (dept != null && departmentStaffRepository.findByUserId(user.getId()).isEmpty()) {
-            DepartmentStaff staff = DepartmentStaff.builder()
-                    .user(user)
-                    .department(dept)
-                    .head(isHead)
-                    .designation(designation)
-                    .createdAt(LocalDateTime.now())
-                    .build();
-            departmentStaffRepository.save(staff);
+        // Enforce authoritative role and purge any spurious student record
+        if (user.getRoles() == null || !user.getRoles().contains(role) || user.getRoles().size() > 1) {
+            user.setRoles(new HashSet<>(Set.of(role)));
+            userRepository.save(user);
+        }
+        studentRepository.findByUserId(user.getId()).ifPresent(studentRepository::delete);
+
+        if (dept != null) {
+            var staffOpt = departmentStaffRepository.findByUserId(user.getId());
+            if (staffOpt.isEmpty()) {
+                DepartmentStaff staff = DepartmentStaff.builder()
+                        .user(user)
+                        .department(dept)
+                        .head(isHead)
+                        .designation(designation)
+                        .createdAt(LocalDateTime.now())
+                        .build();
+                departmentStaffRepository.save(staff);
+            } else {
+                DepartmentStaff staff = staffOpt.get();
+                if (!dept.getId().equals(staff.getDepartment().getId()) || staff.isHead() != isHead) {
+                    staff.setDepartment(dept);
+                    staff.setHead(isHead);
+                    staff.setDesignation(designation);
+                    departmentStaffRepository.save(staff);
+                }
+            }
         }
 
         return user;
@@ -271,6 +315,13 @@ public class DataInitializer implements CommandLineRunner {
                     .build();
             return userRepository.save(u);
         });
+
+        // Ensure student has studentRole and purge any spurious staff mapping
+        if (user.getRoles() == null || !user.getRoles().contains(role)) {
+            user.setRoles(new HashSet<>(Set.of(role)));
+            userRepository.save(user);
+        }
+        departmentStaffRepository.findByUserId(user.getId()).ifPresent(departmentStaffRepository::delete);
 
         return studentRepository.findByUserId(user.getId()).orElseGet(() -> {
             Student s = Student.builder()

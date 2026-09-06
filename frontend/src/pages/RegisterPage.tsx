@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
 import api from '../api/client';
 import { Department } from '../types';
+import { getDashboardRoute } from '../utils/roleUtils';
 import {
   ShieldCheck,
   ArrowRight,
@@ -100,7 +101,7 @@ export const RegisterPage: React.FC = () => {
       email: trimmedEmail,
       password,
       fullName: trimmedFullName,
-      portalRole: 'STUDENT',
+      portalRole,
     };
 
     if (portalRole === 'STUDENT') {
@@ -117,15 +118,7 @@ export const RegisterPage: React.FC = () => {
 
     try {
       const auth = await register(payload);
-      if (auth.roles.includes('ROLE_ADMIN')) {
-        navigate('/admin');
-      } else if (auth.roles.includes('ROLE_DEPARTMENT_HEAD')) {
-        navigate('/head');
-      } else if (auth.roles.includes('ROLE_DEPARTMENT_STAFF')) {
-        navigate('/department');
-      } else {
-        navigate('/student');
-      }
+      navigate(getDashboardRoute({ roles: auth.roles } as any));
     } catch (err: any) {
       console.error('Registration error:', err);
       if (err.response?.data?.message) {

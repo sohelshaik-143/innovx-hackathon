@@ -3,15 +3,17 @@ import api from '../api/client';
 import { useAuth } from '../context/AuthContext';
 import { ClearanceTask, DepartmentKpi } from '../types';
 import { StatusBadge } from '../components/StatusBadge';
+import { TaskActionModal } from '../components/TaskActionModal';
 import { 
   ShieldCheck, 
   AlertTriangle, 
   Clock, 
   CheckCircle2, 
   RefreshCw,
-  Check
+  Check,
+  SlidersHorizontal
 } from 'lucide-react';
-import { format } from 'date-fns';
+import { safeFormat } from '../utils/dateUtils';
 import { Card } from '../components/ui/Card';
 import { StatCard } from '../components/ui/StatCard';
 import { Button } from '../components/ui/Button';
@@ -26,6 +28,8 @@ export const DepartmentHeadDashboard: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [resolvingId, setResolvingId] = useState<string | null>(null);
   const [resolutionNotes, setResolutionNotes] = useState('');
+  const [selectedTask, setSelectedTask] = useState<ClearanceTask | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const fetchData = async () => {
     if (!user?.departmentId) return;
@@ -36,13 +40,21 @@ export const DepartmentHeadDashboard: React.FC = () => {
         setKpis(kpiRes.data);
       }
 
-      const tasksRes = await api.get<{ content: ClearanceTask[] }>('/tasks', {
-        params: { isOverdue: true }
-      }).catch(() => ({ data: { content: [] } }));
-      setTasks(tasksRes.data.content || []);
+      const [overdueRes, delayedRes, escRes] = await Promise.all([
+        api.get<{ content: ClearanceTask[] }>('/tasks', { params: { isOverdue: true } }).catch(() => ({ data: { content: [] } })),
+        api.get<{ content: ClearanceTask[] }>('/tasks', { params: { status: 'DELAYED' } }).catch(() => ({ data: { content: [] } })),
+        api.get<{ content: any[] }>('/escalations').catch(() => ({ data: { content: [] } })),
+      ]);
 
-      const escRes = await api.get<{ content: any[] }>('/escalations').catch(() => ({ data: { content: [] } }));
-      setEscalations(escRes.data.content || []);
+      const overdue = overdueRes.data?.content || [];
+      const delayed = delayedRes.data?.content || [];
+      
+      const map = new Map<string, ClearanceTask>();
+      delayed.forEach((t) => map.set(t.id, t));
+      overdue.forEach((t) => map.set(t.id, t));
+      setTasks(Array.from(map.values()));
+
+      setEscalations(escRes.data?.content || []);
     } catch {
       // fallback empty state
     } finally {
@@ -172,7 +184,7 @@ export const DepartmentHeadDashboard: React.FC = () => {
                   <div className="flex items-center gap-2">
                     <span className="text-xs font-bold text-rose-800 uppercase tracking-wider">SLA Escalation</span>
                     <span className="text-[11px] text-slate-500">
-                      {esc.createdAt ? format(new Date(esc.createdAt), 'MMM dd, yyyy') : 'Recent'}
+                      {safeFormat(esc.createdAt, 'MMM dd, yyyy', 'Recent')}
                     </span>
                   </div>
                   <p className="text-xs text-slate-700 mt-1 font-semibold">
@@ -206,6 +218,125 @@ export const DepartmentHeadDashboard: React.FC = () => {
           </div>
         )}
       </Card>
+
+      {/* DEPARTMENT ATTENTION QUEUE: DELAYED & OVERDUE TASKS */}
+      <Card
+        header={
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Clock className="w-4 h-4 text-amber-600" />
+              <h3 className="text-sm font-bold text-navy-700">
+                Department Attention Queue (Delayed &amp; Overdue Requests)
+              </h3>
+            </div>
+            <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200">
+              {tasks.length} Requires Oversight
+            </span>
+          </div>
+        }
+      >
+        {tasks.length === 0 ? (
+          <EmptyState
+            title="All Clear — Zero Bottlenecks"
+            description="There are currently no delayed or overdue clearance tasks in your department. All clearance operations are processing within SLA."
+            icon={<CheckCircle2 className="w-8 h-8 text-emerald-600" />}
+          />
+        ) : (
+          <div className="space-y-3">
+            {tasks.map((task) => (
+              <div
+                key={task.id}
+                className="p-4 rounded-xl border border-slate-200 bg-white hover:border-slate-300 shadow-xs space-y-3 transition"
+              >
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-2.5">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-bold text-slate-900">
+                        {task.studentName || 'Student'}
+                      </span>
+                      <span className="text-xs font-mono font-medium px-2 py-0.5 rounded bg-slate-100 text-slate-700">
+                        {task.studentRollNo || task.studentIdNumber || 'N/A'}
+                      </span>
+                      {task.studentProgram && (
+                        <span className="text-xs text-slate-500 hidden sm:inline">
+                          • {task.studentProgram}
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-[11px] text-slate-400 mt-0.5">
+                      Assigned Officer: <span className="font-semibold text-slate-700">{task.assignedStaffName || 'Clearance Desk'}</span> • Due: {safeFormat(task.dueAt, 'MMM dd, yyyy • hh:mm a', 'Within 48h')}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2 self-start sm:self-center">
+                    {task.overdue && (
+                      <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-rose-100 text-rose-700 border border-rose-200 flex items-center gap-1">
+                        <AlertTriangle className="w-3 h-3" />
+                        Overdue SLA
+                      </span>
+                    )}
+                    <StatusBadge status={task.status} size="sm" />
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setSelectedTask(task);
+                        setIsModalOpen(true);
+                      }}
+                      leftIcon={<SlidersHorizontal className="w-3 h-3" />}
+                    >
+                      Executive Action
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Delay reason information */}
+                {task.delayInfo ? (
+                  <div className="p-3 rounded-lg bg-amber-50/80 border border-amber-200/80 text-xs space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-amber-900 flex items-center gap-1">
+                        <Clock className="w-3 h-3 text-amber-600" />
+                        Delay Category: {task.delayInfo.category?.replace(/_/g, ' ')}
+                      </span>
+                      {task.delayInfo.expectedResolutionDate && (
+                        <span className="text-[11px] text-amber-800 font-medium">
+                          Expected Resolution: {safeFormat(task.delayInfo.expectedResolutionDate, 'MMM dd, yyyy')}
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-amber-950 font-medium leading-relaxed">
+                      {task.delayInfo.explanation}
+                    </p>
+                    {task.delayInfo.nextAction && (
+                      <p className="text-[11px] text-amber-800 pt-1 border-t border-amber-200/60">
+                        <span className="font-semibold">Next Action: </span>
+                        {task.delayInfo.nextAction}
+                      </p>
+                    )}
+                  </div>
+                ) : (
+                  task.overdue && (
+                    <div className="p-2.5 rounded-lg bg-rose-50 border border-rose-200 text-xs text-rose-800 flex items-center justify-between">
+                      <span>Task exceeded default 48-hour institutional verification SLA. Immediate action recommended.</span>
+                    </div>
+                  )
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </Card>
+
+      <TaskActionModal
+        task={selectedTask}
+        isOpen={isModalOpen}
+        onClose={() => {
+          setIsModalOpen(false);
+          setSelectedTask(null);
+        }}
+        onSuccess={() => {
+          fetchData();
+        }}
+      />
     </div>
   );
 };

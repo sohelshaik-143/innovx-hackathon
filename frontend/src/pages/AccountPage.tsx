@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { Link, useNavigate } from 'react-router-dom';
 import api from '../api/client';
 import { User } from '../types';
+import { getDashboardRoute } from '../utils/roleUtils';
 import {
   ShieldCheck,
   User as UserIcon,
@@ -46,11 +47,7 @@ export const AccountPage: React.FC = () => {
   };
 
   const getDashboardUrl = () => {
-    if (!user) return '/login';
-    if (user.roles?.includes('ROLE_ADMIN')) return '/admin';
-    if (user.roles?.includes('ROLE_DEPARTMENT_HEAD')) return '/head';
-    if (user.roles?.includes('ROLE_DEPARTMENT_STAFF')) return '/department';
-    return '/student';
+    return getDashboardRoute(user);
   };
 
   return (
@@ -146,7 +143,7 @@ export const AccountPage: React.FC = () => {
             <div className="flex justify-between py-2">
               <span className="text-slate-500 font-medium">Security Scope:</span>
               <span className="font-mono text-[11px] text-slate-600">
-                {user?.roles?.join(', ') || 'ROLE_STUDENT'}
+                {user?.roles && user.roles.length > 0 ? user.roles.join(', ') : 'No Roles Assigned'}
               </span>
             </div>
           </div>

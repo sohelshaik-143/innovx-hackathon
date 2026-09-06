@@ -1,5 +1,6 @@
 package com.innovx.nodues.security;
 
+import com.innovx.nodues.domain.enums.RoleType;
 import com.innovx.nodues.domain.entity.DepartmentStaff;
 import com.innovx.nodues.domain.entity.Student;
 import com.innovx.nodues.domain.entity.User;
@@ -33,10 +34,12 @@ public class CustomUserDetailsService implements UserDetailsService {
         String departmentCode = null;
         boolean isHead = false;
 
-        var studentOpt = studentRepository.findByUserId(user.getId());
-        if (studentOpt.isPresent()) {
-            studentId = studentOpt.get().getId();
-        }
+        boolean isStaffOrHead = user.getRoles() != null && user.getRoles().stream()
+                .anyMatch(r -> r.getName() == RoleType.ROLE_DEPARTMENT_STAFF || r.getName() == RoleType.ROLE_DEPARTMENT_HEAD);
+        boolean isAdmin = user.getRoles() != null && user.getRoles().stream()
+                .anyMatch(r -> r.getName() == RoleType.ROLE_ADMIN);
+        boolean isStudent = user.getRoles() != null && user.getRoles().stream()
+                .anyMatch(r -> r.getName() == RoleType.ROLE_STUDENT);
 
         var staffOpt = departmentStaffRepository.findByUserId(user.getId());
         if (staffOpt.isPresent()) {
@@ -44,6 +47,14 @@ public class CustomUserDetailsService implements UserDetailsService {
             departmentId = staff.getDepartment().getId();
             departmentCode = staff.getDepartment().getCode();
             isHead = staff.isHead();
+        }
+
+        // Only attach studentId if the user is explicitly a student and neither staff nor admin
+        if (isStudent && !isStaffOrHead && !isAdmin) {
+            var studentOpt = studentRepository.findByUserId(user.getId());
+            if (studentOpt.isPresent()) {
+                studentId = studentOpt.get().getId();
+            }
         }
 
         return new UserPrincipal(user, studentId, departmentId, departmentCode, isHead);

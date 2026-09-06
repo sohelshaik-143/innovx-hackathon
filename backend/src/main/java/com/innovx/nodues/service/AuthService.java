@@ -62,8 +62,27 @@ public class AuthService {
                 throw new InvalidActionException("Email address '" + trimmedEmail + "' is already in use.");
             }
 
-            // Public registration creates STUDENT accounts exclusively to prevent privilege escalation
-            RoleType roleType = RoleType.ROLE_STUDENT;
+            String requestedRole = request.getPortalRole() != null ? request.getPortalRole().trim().toUpperCase() : "STUDENT";
+            RoleType roleType;
+            switch (requestedRole) {
+                case "STAFF":
+                case "ROLE_DEPARTMENT_STAFF":
+                    roleType = RoleType.ROLE_DEPARTMENT_STAFF;
+                    break;
+                case "HEAD":
+                case "ROLE_DEPARTMENT_HEAD":
+                    roleType = RoleType.ROLE_DEPARTMENT_HEAD;
+                    break;
+                case "ADMIN":
+                case "ROLE_ADMIN":
+                    roleType = RoleType.ROLE_ADMIN;
+                    break;
+                case "STUDENT":
+                case "ROLE_STUDENT":
+                default:
+                    roleType = RoleType.ROLE_STUDENT;
+                    break;
+            }
 
 
             Role assignedRole = roleRepository.findByName(roleType)
@@ -177,16 +196,33 @@ public class AuthService {
 
         UserPrincipal principal = (UserPrincipal) authentication.getPrincipal();
 
+        List<String> roles = principal.getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority)
+                .toList();
+
+        boolean isStaffOrHead = roles.contains("ROLE_DEPARTMENT_STAFF") || roles.contains("ROLE_DEPARTMENT_HEAD");
+        boolean isAdmin = roles.contains("ROLE_ADMIN");
+
+        String deptId = principal.getDepartmentId();
+        String deptCode = principal.getDepartmentCode();
         String deptName = null;
-        if (principal.getDepartmentId() != null) {
-            deptName = departmentRepository.findById(principal.getDepartmentId())
+        boolean isHead = principal.isHead();
+
+        // Query fresh department staff mapping
+        var staffOpt = departmentStaffRepository.findByUserId(principal.getId());
+        if (staffOpt.isPresent()) {
+            DepartmentStaff staff = staffOpt.get();
+            deptId = staff.getDepartment().getId();
+            deptCode = staff.getDepartment().getCode();
+            deptName = staff.getDepartment().getName();
+            isHead = staff.isHead();
+        } else if (deptId != null) {
+            deptName = departmentRepository.findById(deptId)
                     .map(Department::getName)
                     .orElse(null);
         }
 
-        List<String> roles = principal.getAuthorities().stream()
-                .map(GrantedAuthority::getAuthority)
-                .toList();
+        String studentId = (isStaffOrHead || isAdmin) ? null : principal.getStudentId();
 
         return AuthResponse.builder()
                 .token(jwt)
@@ -196,11 +232,11 @@ public class AuthService {
                 .email(principal.getEmail())
                 .fullName(principal.getFullName())
                 .roles(roles)
-                .studentId(principal.getStudentId())
-                .departmentId(principal.getDepartmentId())
-                .departmentCode(principal.getDepartmentCode())
+                .studentId(studentId)
+                .departmentId(deptId)
+                .departmentCode(deptCode)
                 .departmentName(deptName)
-                .isHead(principal.isHead())
+                .isHead(isHead)
                 .isDemo(principal.isDemo())
                 .build();
     }
@@ -216,22 +252,39 @@ public class AuthService {
                 .or(() -> userRepository.findByEmail(principal.getEmail()))
                 .orElseThrow(() -> new ResourceNotFoundException("User not found: " + principal.getId()));
 
+        List<String> roles = user.getRoles() != null 
+                ? user.getRoles().stream().map(r -> r.getName().name()).toList() 
+                : List.of();
+
+        boolean isStaffOrHead = roles.contains("ROLE_DEPARTMENT_STAFF") || roles.contains("ROLE_DEPARTMENT_HEAD");
+        boolean isAdmin = roles.contains("ROLE_ADMIN");
+
+        String studentId = null;
         String studentRoll = null;
         String studentProgram = null;
-        var studOpt = studentRepository.findByUserId(user.getId())
-                .or(() -> principal.getStudentId() != null ? studentRepository.findById(principal.getStudentId()) : java.util.Optional.empty())
-                .or(() -> principal.getStudentId() != null ? studentRepository.findByStudentId(principal.getStudentId()) : java.util.Optional.empty());
-        if (studOpt.isPresent()) {
-            Student s = studOpt.get();
-            studentRoll = s.getRollNo();
-            studentProgram = s.getProgram();
+
+        if (!isStaffOrHead && !isAdmin && roles.contains("ROLE_STUDENT")) {
+            var studOpt = studentRepository.findByUserId(user.getId());
+            if (studOpt.isPresent()) {
+                Student s = studOpt.get();
+                studentId = s.getId();
+                studentRoll = s.getRollNo();
+                studentProgram = s.getProgram();
+            }
         }
 
+        String deptId = null;
+        String deptCode = null;
         String deptName = null;
-        if (principal.getDepartmentId() != null) {
-            deptName = departmentRepository.findById(principal.getDepartmentId())
-                    .map(Department::getName)
-                    .orElse(null);
+        boolean isHead = false;
+
+        var staffOpt = departmentStaffRepository.findByUserId(user.getId());
+        if (staffOpt.isPresent()) {
+            DepartmentStaff staff = staffOpt.get();
+            deptId = staff.getDepartment().getId();
+            deptCode = staff.getDepartment().getCode();
+            deptName = staff.getDepartment().getName();
+            isHead = staff.isHead();
         }
 
         return UserSummaryDto.builder()
@@ -239,16 +292,14 @@ public class AuthService {
                 .username(user.getUsername())
                 .email(user.getEmail())
                 .fullName(user.getFullName())
-                .roles(user.getRoles() != null 
-                    ? user.getRoles().stream().map(r -> r.getName().name()).toList() 
-                    : List.of())
+                .roles(roles)
                 .active(user.isActive())
                 .demo(user.isDemo())
-                .departmentId(principal.getDepartmentId())
-                .departmentCode(principal.getDepartmentCode())
+                .departmentId(deptId)
+                .departmentCode(deptCode)
                 .departmentName(deptName)
-                .head(principal.isHead())
-                .studentId(principal.getStudentId())
+                .head(isHead)
+                .studentId(studentId)
                 .rollNo(studentRoll)
                 .program(studentProgram)
                 .build();
