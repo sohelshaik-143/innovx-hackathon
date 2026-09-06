@@ -129,10 +129,11 @@ public class GlobalExceptionHandler {
         ErrorResponse error = ErrorResponse.builder()
                 .status(HttpStatus.INTERNAL_SERVER_ERROR.value())
                 .error(HttpStatus.INTERNAL_SERVER_ERROR.getReasonPhrase())
-                .message(ex.getMessage() != null ? ex.getMessage() : "An unexpected server error occurred.")
+                .message("An unexpected internal error occurred. Please contact institutional support if the issue persists.")
                 .timestamp(LocalDateTime.now())
                 .path(request.getRequestURI())
                 .build();
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
     }
+
 }

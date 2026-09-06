@@ -1,14 +1,17 @@
 import axios from 'axios';
 
-// Determine API base URL based on environment
-const getBaseURL = () => {
-  // If API_URL is set, use it (for Vercel - private environment variable)
-  if (import.meta.env.API_URL) {
-    return import.meta.env.API_URL;
+const getBaseURL = (): string => {
+  const envUrl = (import.meta.env.VITE_API_URL || import.meta.env.API_URL || '').trim();
+  if (envUrl) {
+    if (envUrl.startsWith('http://') || envUrl.startsWith('https://')) {
+      const cleanUrl = envUrl.replace(/\/+$/, '');
+      return cleanUrl.endsWith('/api') ? cleanUrl : `${cleanUrl}/api`;
+    }
+    return envUrl.startsWith('/') ? envUrl : `/${envUrl}`;
   }
-  // Otherwise use relative path (works with Vercel rewrites and local proxy)
   return '/api';
 };
+
 
 const api = axios.create({
   baseURL: getBaseURL(),

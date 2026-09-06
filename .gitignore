@@ -33,5 +33,7 @@ scratch/
 Thumbs.db
 
 # Environment overrides
+.env
 .env.local
 .env.*.local
+

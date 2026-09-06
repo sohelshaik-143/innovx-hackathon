@@ -107,8 +107,9 @@ export const RegisterPage: React.FC = () => {
       email: trimmedEmail,
       password,
       fullName: trimmedFullName,
-      portalRole,
+      portalRole: 'STUDENT',
     };
+
 
     if (portalRole === 'STUDENT') {
       const randomSuffix = Math.floor(10000 + Math.random() * 90000);

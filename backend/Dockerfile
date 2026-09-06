@@ -18,7 +18,7 @@ USER appuser
 
 COPY --from=builder /build/target/automated-nodues-backend-*.jar app.jar
 
-EXPOSE 8080
+EXPOSE ${PORT:-8080}
 ENV JAVA_OPTS="-Xms256m -Xmx512m -XX:+UseG1GC"
 
-ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar app.jar"]
+ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar app.jar --server.port=${PORT:-8080} --server.address=0.0.0.0"]

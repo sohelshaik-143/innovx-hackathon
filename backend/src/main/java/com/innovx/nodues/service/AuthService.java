@@ -62,15 +62,9 @@ public class AuthService {
                 throw new InvalidActionException("Email address '" + trimmedEmail + "' is already in use.");
             }
 
-            RoleType roleType;
-            String portalRole = request.getPortalRole().toUpperCase().trim();
-            switch (portalRole) {
-                case "STUDENT" -> roleType = RoleType.ROLE_STUDENT;
-                case "STAFF" -> roleType = RoleType.ROLE_DEPARTMENT_STAFF;
-                case "HEAD" -> roleType = RoleType.ROLE_DEPARTMENT_HEAD;
-                case "ADMIN" -> roleType = RoleType.ROLE_ADMIN;
-                default -> throw new InvalidActionException("Invalid portal role specified: " + request.getPortalRole());
-            }
+            // Public registration creates STUDENT accounts exclusively to prevent privilege escalation
+            RoleType roleType = RoleType.ROLE_STUDENT;
+
 
             Role assignedRole = roleRepository.findByName(roleType)
                     .orElseGet(() -> {

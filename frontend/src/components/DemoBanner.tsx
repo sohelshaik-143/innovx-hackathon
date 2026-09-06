@@ -5,6 +5,11 @@ import { AlertCircle, UserCheck } from 'lucide-react';
 export const DemoBanner: React.FC = () => {
   const { user, switchDemoUser } = useAuth();
 
+  if (import.meta.env.VITE_DEMO_MODE !== 'true') {
+    return null;
+  }
+
+
   const demoAccounts = [
     { label: 'Student Alex', role: 'STUDENT', user: 'student.alex', pass: 'student123' },
     { label: 'Student Sarah', role: 'STUDENT', user: 'student.sarah', pass: 'student123' },

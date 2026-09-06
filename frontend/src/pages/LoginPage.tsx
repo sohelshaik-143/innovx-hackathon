@@ -231,34 +231,37 @@ export const LoginPage: React.FC = () => {
             </div>
           </form>
 
-          {/* Quick Evaluation Role Switcher */}
-          <div className="pt-4 border-t border-slate-200">
-            <div className="flex items-center justify-between mb-2.5">
-              <span className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
-                <KeyRound className="w-3.5 h-3.5 text-rgukt-primary" />
-                <span>Evaluation Quick Login Switcher</span>
-              </span>
-              <span className="text-[10px] text-slate-400 font-semibold">1-Click Test Access:</span>
-            </div>
+          {/* Quick Evaluation Role Switcher (Enabled only when VITE_DEMO_MODE=true) */}
+          {import.meta.env.VITE_DEMO_MODE === 'true' && (
+            <div className="pt-4 border-t border-slate-200">
+              <div className="flex items-center justify-between mb-2.5">
+                <span className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+                  <KeyRound className="w-3.5 h-3.5 text-rgukt-primary" />
+                  <span>Evaluation Quick Login Switcher</span>
+                </span>
+                <span className="text-[10px] text-slate-400 font-semibold">1-Click Test Access:</span>
+              </div>
 
-            <div className="grid grid-cols-2 gap-2">
-              {demoAccounts.map((acc) => (
-                <button
-                  key={acc.user}
-                  type="button"
-                  onClick={() => {
-                    setUsername(acc.user);
-                    setPassword(acc.pass);
-                    switchDemoUser(acc.user, acc.pass);
-                  }}
-                  className={`p-2.5 rounded-xl border text-left transition text-xs ${acc.color}`}
-                >
-                  <p className="font-bold text-slate-900 leading-tight">{acc.label}</p>
-                  <p className="text-[10px] text-slate-500 truncate mt-0.5">{acc.role}</p>
-                </button>
-              ))}
+              <div className="grid grid-cols-2 gap-2">
+                {demoAccounts.map((acc) => (
+                  <button
+                    key={acc.user}
+                    type="button"
+                    onClick={() => {
+                      setUsername(acc.user);
+                      setPassword(acc.pass);
+                      switchDemoUser(acc.user, acc.pass);
+                    }}
+                    className={`p-2.5 rounded-xl border text-left transition text-xs ${acc.color}`}
+                  >
+                    <p className="font-bold text-slate-900 leading-tight">{acc.label}</p>
+                    <p className="text-[10px] text-slate-500 truncate mt-0.5">{acc.role}</p>
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
+
 
           {/* Public Verification Link */}
           <div className="pt-2 text-center">
