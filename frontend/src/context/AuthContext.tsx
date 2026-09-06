@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import api from '../api/client';
 import { User, AuthResponse } from '../types';
+import { getDashboardRoute } from '../utils/roleUtils';
 
 interface UserSummaryDto {
   id: string;
@@ -67,7 +68,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         username: profile.username,
         email: profile.email,
         fullName: profile.fullName,
-        roles: profile.roles && profile.roles.length > 0 ? profile.roles : ['ROLE_STUDENT'],
+        roles: Array.isArray(profile.roles) ? profile.roles : [],
         active: profile.active,
         demo: profile.demo,
         departmentId: profile.departmentId,
@@ -145,7 +146,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         username: authData.username || username,
         email: authData.email || 'unknown',
         fullName: authData.fullName || 'User',
-        roles: authData.roles && authData.roles.length > 0 ? authData.roles : ['ROLE_STUDENT'],
+        roles: Array.isArray(authData.roles) ? authData.roles : [],
         active: true,
         demo: authData.isDemo ?? false,
         departmentId: authData.departmentId,
@@ -191,7 +192,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         username: authData.username || registerData.username,
         email: authData.email || registerData.email,
         fullName: authData.fullName || registerData.fullName,
-        roles: authData.roles && authData.roles.length > 0 ? authData.roles : ['ROLE_STUDENT'],
+        roles: Array.isArray(authData.roles) ? authData.roles : [],
         active: true,
         demo: authData.isDemo ?? false,
         departmentId: authData.departmentId,
@@ -217,15 +218,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const switchDemoUser = async (username: string, password: string) => {
     const authData = await login(username, password);
-    if (authData.roles.includes('ROLE_ADMIN')) {
-      window.location.href = '/admin';
-    } else if (authData.roles.includes('ROLE_DEPARTMENT_HEAD')) {
-      window.location.href = '/head';
-    } else if (authData.roles.includes('ROLE_DEPARTMENT_STAFF')) {
-      window.location.href = '/department';
-    } else {
-      window.location.href = '/student';
-    }
+    const userObj = { roles: authData.roles } as any;
+    window.location.href = getDashboardRoute(userObj);
   };
 
   return (

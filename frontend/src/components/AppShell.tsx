@@ -83,7 +83,9 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
     ? headNav
     : isRole('ROLE_DEPARTMENT_STAFF')
     ? departmentNav
-    : studentNav;
+    : isRole('ROLE_STUDENT')
+    ? studentNav
+    : [];
 
   return (
     <div className="min-h-screen bg-ivory-100 flex flex-col font-sans">

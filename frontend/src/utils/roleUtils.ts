@@ -13,5 +13,8 @@ export const getDashboardRoute = (user: User | null): string => {
   if (user.roles.includes('ROLE_DEPARTMENT_STAFF')) {
     return '/department';
   }
-  return '/student';
+  if (user.roles.includes('ROLE_STUDENT')) {
+    return '/student';
+  }
+  return '/403';
 };
