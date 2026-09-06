@@ -72,7 +72,14 @@ public class AuthService {
         }
 
         Role assignedRole = roleRepository.findByName(roleType)
-                .orElseThrow(() -> new ResourceNotFoundException("Role not found: " + roleType));
+                .orElseGet(() -> {
+                    Role newRole = Role.builder()
+                            .id("role-" + roleType.name().toLowerCase().replace("role_", ""))
+                            .name(roleType)
+                            .description(roleType.name())
+                            .build();
+                    return roleRepository.saveAndFlush(newRole);
+                });
 
         String[] nameParts = request.getFullName().trim().split("\\s+", 2);
         String firstName = nameParts[0];
@@ -96,16 +103,16 @@ public class AuthService {
         if (roleType == RoleType.ROLE_STUDENT) {
             String stuId = request.getStudentId() != null && !request.getStudentId().isBlank()
                     ? request.getStudentId().trim()
-                    : "STU-" + System.currentTimeMillis() % 100000;
+                    : "STU-" + (System.currentTimeMillis() % 100000);
             String roll = request.getRollNo() != null && !request.getRollNo().isBlank()
                     ? request.getRollNo().trim()
                     : "2024" + stuId.replace("STU-", "");
 
             if (studentRepository.existsByStudentId(stuId)) {
-                throw new InvalidActionException("Student ID '" + stuId + "' is already registered in the system.");
+                stuId = stuId + "-" + (int)(Math.random() * 10000);
             }
             if (studentRepository.existsByRollNo(roll)) {
-                throw new InvalidActionException("Roll Number '" + roll + "' is already registered in the system.");
+                roll = roll + "_" + (int)(Math.random() * 10000);
             }
 
             String prog = request.getProgram() != null && !request.getProgram().isBlank()
@@ -198,6 +205,8 @@ public class AuthService {
     @Transactional(readOnly = true)
     public UserSummaryDto getCurrentUser(UserPrincipal principal) {
         User user = userRepository.findById(principal.getId())
+                .or(() -> userRepository.findByUsername(principal.getUsername()))
+                .or(() -> userRepository.findByEmail(principal.getEmail()))
                 .orElseThrow(() -> new ResourceNotFoundException("User not found: " + principal.getId()));
 
         String studentRoll = null;

@@ -25,6 +25,7 @@ public class ClearanceService {
     private final ClearanceTaskRepository clearanceTaskRepository;
     private final StudentRepository studentRepository;
     private final DepartmentRepository departmentRepository;
+    private final UserRepository userRepository;
     private final SlaEscalationService slaEscalationService;
     private final NotificationService notificationService;
     private final AuditLogService auditLogService;
@@ -33,11 +34,45 @@ public class ClearanceService {
         if (studentIdentifier == null || studentIdentifier.isBlank()) {
             return null;
         }
-        return studentRepository.findById(studentIdentifier)
+        Student found = studentRepository.findById(studentIdentifier)
                 .or(() -> studentRepository.findByStudentId(studentIdentifier))
                 .or(() -> studentRepository.findByUserId(studentIdentifier))
                 .or(() -> studentRepository.findByRollNo(studentIdentifier))
+                .or(() -> studentRepository.findAll().stream()
+                        .filter(s -> s.getUser() != null && (
+                                studentIdentifier.equalsIgnoreCase(s.getUser().getId()) ||
+                                studentIdentifier.equalsIgnoreCase(s.getUser().getUsername()) ||
+                                studentIdentifier.equalsIgnoreCase(s.getUser().getEmail())
+                        ))
+                        .findFirst())
                 .orElse(null);
+
+        if (found != null) {
+            return found;
+        }
+
+        var userOpt = userRepository.findById(studentIdentifier)
+                .or(() -> userRepository.findByUsername(studentIdentifier))
+                .or(() -> userRepository.findByEmail(studentIdentifier));
+        if (userOpt.isPresent()) {
+            User user = userOpt.get();
+            var stOpt = studentRepository.findByUserId(user.getId());
+            if (stOpt.isPresent()) {
+                return stOpt.get();
+            }
+            String randomSuffix = String.valueOf(System.currentTimeMillis() % 100000);
+            Student newStudent = Student.builder()
+                    .user(user)
+                    .studentId("STU-2024-" + randomSuffix)
+                    .rollNo("2024CS" + randomSuffix)
+                    .program("B.Tech Computer Science & Engineering")
+                    .batchYear("2022-2026")
+                    .academicDepartment("Computer Science")
+                    .build();
+            return studentRepository.saveAndFlush(newStudent);
+        }
+
+        return null;
     }
 
     @Transactional
