@@ -50,15 +50,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const res = await api.post<AuthResponse>('/auth/login', { username, password });
       const authData = res.data;
 
+      if (!authData.token) {
+        throw new Error('No authentication token received from server');
+      }
+
       localStorage.setItem('nodues_token', authData.token);
       setToken(authData.token);
 
       const userInfo: User = {
-        id: authData.userId,
-        username: authData.username,
-        email: authData.email,
-        fullName: authData.fullName,
-        roles: authData.roles,
+        id: authData.userId || 'unknown',
+        username: authData.username || username || 'unknown',
+        email: authData.email || 'unknown',
+        fullName: authData.fullName || 'User',
+        roles: authData.roles && Array.isArray(authData.roles) ? authData.roles : ['ROLE_STUDENT'],
         active: true,
         demo: authData.isDemo ?? (authData as any).demo ?? false,
         departmentId: authData.departmentId,
@@ -71,6 +75,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       localStorage.setItem('nodues_user', JSON.stringify(userInfo));
       setUser(userInfo);
       return authData;
+    } catch (error) {
+      setToken(null);
+      setUser(null);
+      localStorage.removeItem('nodues_token');
+      localStorage.removeItem('nodues_user');
+      throw error;
     } finally {
       setIsLoading(false);
     }
@@ -82,15 +92,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const res = await api.post<AuthResponse>('/auth/register', registerData);
       const authData = res.data;
 
+      if (!authData.token) {
+        throw new Error('No authentication token received from server');
+      }
+
       localStorage.setItem('nodues_token', authData.token);
       setToken(authData.token);
 
       const userInfo: User = {
-        id: authData.userId,
-        username: authData.username,
-        email: authData.email,
-        fullName: authData.fullName,
-        roles: authData.roles,
+        id: authData.userId || 'unknown',
+        username: authData.username || registerData.username || 'unknown',
+        email: authData.email || registerData.email || 'unknown',
+        fullName: authData.fullName || registerData.fullName || 'User',
+        roles: authData.roles && Array.isArray(authData.roles) ? authData.roles : ['ROLE_STUDENT'],
         active: true,
         demo: authData.isDemo ?? (authData as any).demo ?? false,
         departmentId: authData.departmentId,
@@ -103,6 +117,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       localStorage.setItem('nodues_user', JSON.stringify(userInfo));
       setUser(userInfo);
       return authData;
+    } catch (error) {
+      setToken(null);
+      setUser(null);
+      localStorage.removeItem('nodues_token');
+      localStorage.removeItem('nodues_user');
+      throw error;
     } finally {
       setIsLoading(false);
     }

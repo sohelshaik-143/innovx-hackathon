@@ -39,7 +39,28 @@ export const LoginPage: React.FC = () => {
         navigate('/student');
       }
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Invalid username or password.');
+      console.error('Login error:', err);
+      
+      // Check for server error message
+      if (err.response?.data?.message) {
+        setError(err.response.data.message);
+        return;
+      }
+      
+      // Check for error field
+      if (err.response?.data?.error) {
+        setError(err.response.data.error);
+        return;
+      }
+      
+      // Handle network errors
+      if (!err.response) {
+        setError('Network error. Please check your connection and try again.');
+        return;
+      }
+      
+      // Default error
+      setError(err.message || 'Invalid username or password.');
     }
   };
 

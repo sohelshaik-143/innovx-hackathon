@@ -51,116 +51,125 @@ public class AuthService {
 
     @Transactional
     public AuthResponse register(RegisterRequest request) {
-        String trimmedUsername = request.getUsername().trim();
-        String trimmedEmail = request.getEmail().trim().toLowerCase();
+        try {
+            String trimmedUsername = request.getUsername().trim();
+            String trimmedEmail = request.getEmail().trim().toLowerCase();
 
-        if (userRepository.existsByUsername(trimmedUsername)) {
-            throw new InvalidActionException("Username '" + trimmedUsername + "' is already registered in the system.");
-        }
-        if (userRepository.existsByEmail(trimmedEmail)) {
-            throw new InvalidActionException("Email address '" + trimmedEmail + "' is already in use.");
-        }
-
-        RoleType roleType;
-        String portalRole = request.getPortalRole().toUpperCase().trim();
-        switch (portalRole) {
-            case "STUDENT" -> roleType = RoleType.ROLE_STUDENT;
-            case "STAFF" -> roleType = RoleType.ROLE_DEPARTMENT_STAFF;
-            case "HEAD" -> roleType = RoleType.ROLE_DEPARTMENT_HEAD;
-            case "ADMIN" -> roleType = RoleType.ROLE_ADMIN;
-            default -> throw new InvalidActionException("Invalid portal role specified: " + request.getPortalRole());
-        }
-
-        Role assignedRole = roleRepository.findByName(roleType)
-                .orElseGet(() -> {
-                    Role newRole = Role.builder()
-                            .id("role-" + roleType.name().toLowerCase().replace("role_", ""))
-                            .name(roleType)
-                            .description(roleType.name())
-                            .build();
-                    return roleRepository.saveAndFlush(newRole);
-                });
-
-        String[] nameParts = request.getFullName().trim().split("\\s+", 2);
-        String firstName = nameParts[0];
-        String lastName = nameParts.length > 1 ? nameParts[1] : "";
-
-        User user = User.builder()
-                .username(trimmedUsername)
-                .email(trimmedEmail)
-                .passwordHash(passwordEncoder.encode(request.getPassword()))
-                .firstName(firstName)
-                .lastName(lastName)
-                .active(true)
-                .demo(false)
-                .roles(new HashSet<>(Set.of(assignedRole)))
-                .createdAt(LocalDateTime.now())
-                .updatedAt(LocalDateTime.now())
-                .build();
-
-        User savedUser = userRepository.saveAndFlush(user);
-
-        if (roleType == RoleType.ROLE_STUDENT) {
-            String stuId = request.getStudentId() != null && !request.getStudentId().isBlank()
-                    ? request.getStudentId().trim()
-                    : "STU-" + (System.currentTimeMillis() % 100000);
-            String roll = request.getRollNo() != null && !request.getRollNo().isBlank()
-                    ? request.getRollNo().trim()
-                    : "2024" + stuId.replace("STU-", "");
-
-            if (studentRepository.existsByStudentId(stuId)) {
-                stuId = stuId + "-" + (int)(Math.random() * 10000);
+            if (userRepository.existsByUsername(trimmedUsername)) {
+                throw new InvalidActionException("Username '" + trimmedUsername + "' is already registered in the system.");
             }
-            if (studentRepository.existsByRollNo(roll)) {
-                roll = roll + "_" + (int)(Math.random() * 10000);
+            if (userRepository.existsByEmail(trimmedEmail)) {
+                throw new InvalidActionException("Email address '" + trimmedEmail + "' is already in use.");
             }
 
-            String prog = request.getProgram() != null && !request.getProgram().isBlank()
-                    ? request.getProgram().trim()
-                    : "B.Tech Engineering Program";
-            String batch = request.getBatchYear() != null && !request.getBatchYear().isBlank()
-                    ? request.getBatchYear().trim()
-                    : "2022-2026";
-            String acadDept = request.getAcademicDepartment() != null && !request.getAcademicDepartment().isBlank()
-                    ? request.getAcademicDepartment().trim()
-                    : "Computer Science";
+            RoleType roleType;
+            String portalRole = request.getPortalRole().toUpperCase().trim();
+            switch (portalRole) {
+                case "STUDENT" -> roleType = RoleType.ROLE_STUDENT;
+                case "STAFF" -> roleType = RoleType.ROLE_DEPARTMENT_STAFF;
+                case "HEAD" -> roleType = RoleType.ROLE_DEPARTMENT_HEAD;
+                case "ADMIN" -> roleType = RoleType.ROLE_ADMIN;
+                default -> throw new InvalidActionException("Invalid portal role specified: " + request.getPortalRole());
+            }
 
-            Student student = Student.builder()
-                    .user(savedUser)
-                    .studentId(stuId)
-                    .rollNo(roll)
-                    .program(prog)
-                    .batchYear(batch)
-                    .academicDepartment(acadDept)
-                    .phoneNumber(request.getPhoneNumber())
+            Role assignedRole = roleRepository.findByName(roleType)
+                    .orElseGet(() -> {
+                        Role newRole = Role.builder()
+                                .id("role-" + roleType.name().toLowerCase().replace("role_", ""))
+                                .name(roleType)
+                                .description(roleType.name())
+                                .build();
+                        return roleRepository.saveAndFlush(newRole);
+                    });
+
+            String[] nameParts = request.getFullName().trim().split("\\s+", 2);
+            String firstName = nameParts[0];
+            String lastName = nameParts.length > 1 ? nameParts[1] : "";
+
+            User user = User.builder()
+                    .username(trimmedUsername)
+                    .email(trimmedEmail)
+                    .passwordHash(passwordEncoder.encode(request.getPassword()))
+                    .firstName(firstName)
+                    .lastName(lastName)
+                    .active(true)
+                    .demo(false)
+                    .roles(new HashSet<>(Set.of(assignedRole)))
+                    .createdAt(LocalDateTime.now())
+                    .updatedAt(LocalDateTime.now())
                     .build();
-            studentRepository.saveAndFlush(student);
-        } else if (roleType == RoleType.ROLE_DEPARTMENT_STAFF || roleType == RoleType.ROLE_DEPARTMENT_HEAD) {
-            Department dept = null;
-            if (request.getDepartmentId() != null && !request.getDepartmentId().isBlank()) {
-                dept = departmentRepository.findById(request.getDepartmentId())
-                        .or(() -> departmentRepository.findByCode(request.getDepartmentId()))
-                        .orElse(null);
-            }
-            if (dept == null) {
-                dept = departmentRepository.findAll().stream().findFirst().orElse(null);
-            }
 
-            if (dept != null) {
-                DepartmentStaff staff = DepartmentStaff.builder()
+            User savedUser = userRepository.saveAndFlush(user);
+            log.info("User registered successfully: {} with role: {}", trimmedUsername, roleType.name());
+
+            if (roleType == RoleType.ROLE_STUDENT) {
+                String stuId = request.getStudentId() != null && !request.getStudentId().isBlank()
+                        ? request.getStudentId().trim()
+                        : "STU-" + (System.currentTimeMillis() % 100000);
+                String roll = request.getRollNo() != null && !request.getRollNo().isBlank()
+                        ? request.getRollNo().trim()
+                        : "2024" + stuId.replace("STU-", "");
+
+                if (studentRepository.existsByStudentId(stuId)) {
+                    stuId = stuId + "-" + (int)(Math.random() * 10000);
+                }
+                if (studentRepository.existsByRollNo(roll)) {
+                    roll = roll + "_" + (int)(Math.random() * 10000);
+                }
+
+                String prog = request.getProgram() != null && !request.getProgram().isBlank()
+                        ? request.getProgram().trim()
+                        : "B.Tech Engineering Program";
+                String batch = request.getBatchYear() != null && !request.getBatchYear().isBlank()
+                        ? request.getBatchYear().trim()
+                        : "2022-2026";
+                String acadDept = request.getAcademicDepartment() != null && !request.getAcademicDepartment().isBlank()
+                        ? request.getAcademicDepartment().trim()
+                        : "Computer Science";
+
+                Student student = Student.builder()
                         .user(savedUser)
-                        .department(dept)
-                        .head(roleType == RoleType.ROLE_DEPARTMENT_HEAD)
-                        .designation(request.getDesignation() != null && !request.getDesignation().isBlank()
-                                ? request.getDesignation().trim()
-                                : (roleType == RoleType.ROLE_DEPARTMENT_HEAD ? "Department Head" : "Clearance Verification Officer"))
-                        .createdAt(LocalDateTime.now())
+                        .studentId(stuId)
+                        .rollNo(roll)
+                        .program(prog)
+                        .batchYear(batch)
+                        .academicDepartment(acadDept)
+                        .phoneNumber(request.getPhoneNumber())
                         .build();
-                departmentStaffRepository.saveAndFlush(staff);
-            }
-        }
+                studentRepository.saveAndFlush(student);
+            } else if (roleType == RoleType.ROLE_DEPARTMENT_STAFF || roleType == RoleType.ROLE_DEPARTMENT_HEAD) {
+                Department dept = null;
+                if (request.getDepartmentId() != null && !request.getDepartmentId().isBlank()) {
+                    dept = departmentRepository.findById(request.getDepartmentId())
+                            .or(() -> departmentRepository.findByCode(request.getDepartmentId()))
+                            .orElse(null);
+                }
+                if (dept == null) {
+                    dept = departmentRepository.findAll().stream().findFirst().orElse(null);
+                }
 
-        return login(new LoginRequest(trimmedUsername, request.getPassword()));
+                if (dept != null) {
+                    DepartmentStaff staff = DepartmentStaff.builder()
+                            .user(savedUser)
+                            .department(dept)
+                            .head(roleType == RoleType.ROLE_DEPARTMENT_HEAD)
+                            .designation(request.getDesignation() != null && !request.getDesignation().isBlank()
+                                    ? request.getDesignation().trim()
+                                    : (roleType == RoleType.ROLE_DEPARTMENT_HEAD ? "Department Head" : "Clearance Verification Officer"))
+                            .createdAt(LocalDateTime.now())
+                            .build();
+                    departmentStaffRepository.saveAndFlush(staff);
+                }
+            }
+
+            return login(new LoginRequest(trimmedUsername, request.getPassword()));
+        } catch (InvalidActionException e) {
+            log.warn("Invalid registration attempt: " + e.getMessage());
+            throw e;
+        } catch (Exception e) {
+            log.error("Error during user registration", e);
+            throw new InvalidActionException("Registration failed: " + e.getMessage());
+        }
     }
 
     @Transactional(readOnly = true)
@@ -204,6 +213,10 @@ public class AuthService {
 
     @Transactional(readOnly = true)
     public UserSummaryDto getCurrentUser(UserPrincipal principal) {
+        if (principal == null || principal.getId() == null) {
+            throw new ResourceNotFoundException("User principal is invalid");
+        }
+
         User user = userRepository.findById(principal.getId())
                 .or(() -> userRepository.findByUsername(principal.getUsername()))
                 .or(() -> userRepository.findByEmail(principal.getEmail()))
@@ -232,7 +245,9 @@ public class AuthService {
                 .username(user.getUsername())
                 .email(user.getEmail())
                 .fullName(user.getFullName())
-                .roles(user.getRoles().stream().map(r -> r.getName().name()).toList())
+                .roles(user.getRoles() != null 
+                    ? user.getRoles().stream().map(r -> r.getName().name()).toList() 
+                    : List.of())
                 .active(user.isActive())
                 .demo(user.isDemo())
                 .departmentId(principal.getDepartmentId())

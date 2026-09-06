@@ -134,11 +134,16 @@ export const RegisterPage: React.FC = () => {
         navigate('/student');
       }
     } catch (err: any) {
+      console.error('Registration error:', err);
+      
       // 1. Check for fieldErrors map from Spring Boot validation
       const fieldErrors = err.response?.data?.fieldErrors;
       if (fieldErrors && typeof fieldErrors === 'object') {
         const fieldMsgs = Object.entries(fieldErrors)
-          .map(([field, msg]) => `${field.charAt(0).toUpperCase() + field.slice(1)}: ${msg}`)
+          .map(([field, msg]) => {
+            const fieldName = field.charAt(0).toUpperCase() + field.slice(1);
+            return `${fieldName}: ${Array.isArray(msg) ? (msg as any)[0] : msg}`;
+          })
           .join(' • ');
         if (fieldMsgs) {
           setError(fieldMsgs);
@@ -152,8 +157,20 @@ export const RegisterPage: React.FC = () => {
         return;
       }
 
-      // 3. Fallback error
-      setError(err.message || 'Failed to create institutional account. Please check your details.');
+      // 3. Check for error field in response
+      if (err.response?.data?.error) {
+        setError(err.response.data.error);
+        return;
+      }
+
+      // 4. Handle network errors
+      if (!err.response) {
+        setError('Network error. Please check your connection and try again.');
+        return;
+      }
+
+      // 5. Fallback error
+      setError(err.message || 'Failed to create institutional account. Please check your details and try again.');
     }
   };
 

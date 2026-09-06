@@ -36,9 +36,11 @@ public class UserPrincipal implements UserDetails {
         this.password = user.getPasswordHash();
         this.active = user.isActive();
         this.demo = user.isDemo();
-        this.authorities = user.getRoles().stream()
-                .map(r -> new SimpleGrantedAuthority(r.getName().name()))
-                .collect(Collectors.toList());
+        this.authorities = user.getRoles() != null 
+                ? user.getRoles().stream()
+                    .map(r -> new SimpleGrantedAuthority(r.getName().name()))
+                    .collect(Collectors.toList())
+                : List.of();
         this.studentId = studentId;
         this.departmentId = departmentId;
         this.departmentCode = departmentCode;

@@ -1,7 +1,17 @@
 import axios from 'axios';
 
+// Determine API base URL based on environment
+const getBaseURL = () => {
+  // If VITE_API_URL is set, use it (for Vercel)
+  if (import.meta.env.VITE_API_URL) {
+    return import.meta.env.VITE_API_URL;
+  }
+  // Otherwise use relative path (works with Vercel rewrites and local proxy)
+  return '/api';
+};
+
 const api = axios.create({
-  baseURL: '/api',
+  baseURL: getBaseURL(),
   headers: {
     'Content-Type': 'application/json',
   },
@@ -15,12 +25,23 @@ api.interceptors.request.use(
     }
     return config;
   },
-  (error) => Promise.reject(error)
+  (error) => {
+    console.error('Request error:', error);
+    return Promise.reject(error);
+  }
 );
 
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    // Ensure response has expected structure
+    if (!response.data) {
+      console.warn('Empty response body');
+    }
+    return response;
+  },
   (error) => {
+    console.error('Response error:', error.response?.status, error.response?.data);
+    
     if (error.response?.status === 401) {
       // If unauthorized and not on public pages, clear token
       const pathname = window.location.pathname;
