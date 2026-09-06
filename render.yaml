@@ -42,4 +42,3 @@ databases:
     region: singapore
     plan: free
     databaseName: nodues_db
-    user: postgres
