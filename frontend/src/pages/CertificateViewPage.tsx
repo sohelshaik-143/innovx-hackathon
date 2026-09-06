@@ -2,16 +2,16 @@ import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import api from '../api/client';
 import { Certificate } from '../types';
-import { 
-  Award, 
-  Download, 
-  CheckCircle2, 
-  ArrowLeft, 
-  Building2, 
-  Calendar, 
-  QrCode, 
-  ShieldCheck, 
-  ExternalLink 
+import {
+  Award,
+  Download,
+  CheckCircle2,
+  ArrowLeft,
+  Building2,
+  Calendar,
+  QrCode,
+  ShieldCheck,
+  ExternalLink
 } from 'lucide-react';
 import { format } from 'date-fns';
 
@@ -182,7 +182,19 @@ export const CertificateViewPage: React.FC = () => {
           </div>
 
           <div className="text-center p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-1">
-            <QrCode className="w-12 h-12 text-slate-700 mx-auto" />
+            <img
+              src={`/api/public/certificates/qr/${certificate.certificateNumber}`}
+              alt={`QR Code for Certificate ${certificate.certificateNumber}`}
+              className="w-24 h-24 mx-auto bg-white p-1 rounded-lg border border-slate-200 shadow-2xs object-contain"
+              onError={(e) => {
+                e.currentTarget.style.display = 'none';
+                const fallback = document.getElementById('qr-icon-fallback');
+                if (fallback) fallback.style.display = 'block';
+              }}
+            />
+            <div id="qr-icon-fallback" style={{ display: 'none' }}>
+              <QrCode className="w-16 h-16 text-slate-700 mx-auto" />
+            </div>
             <span className="text-[10px] font-semibold text-brand-700 block">
               Scan to Verify Online
             </span>

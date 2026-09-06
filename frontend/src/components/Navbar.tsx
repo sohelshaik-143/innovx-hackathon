@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { NotificationDrawer } from './NotificationDrawer';
-import { 
-  Building2, 
-  Bell, 
-  LogOut, 
-  ShieldCheck, 
+import {
+  Building2,
+  Bell,
+  LogOut,
+  ShieldCheck,
   User as UserIcon,
   SearchCheck,
   FileCheck2,
@@ -25,24 +25,24 @@ export const Navbar: React.FC = () => {
   const navLinks = [
     ...(isRole('ROLE_STUDENT')
       ? [
-          { name: 'My Clearance', path: '/student', icon: FileCheck2 },
-        ]
+        { name: 'My Clearance', path: '/student', icon: FileCheck2 },
+      ]
       : []),
     ...(isRole('ROLE_DEPARTMENT_STAFF')
       ? [
-          { name: 'Department Tasks', path: '/department', icon: Building2 },
-        ]
+        { name: 'Department Tasks', path: '/department', icon: Building2 },
+      ]
       : []),
     ...(isRole('ROLE_DEPARTMENT_HEAD')
       ? [
-          { name: 'Head Overview', path: '/head', icon: ShieldCheck },
-        ]
+        { name: 'Head Overview', path: '/head', icon: ShieldCheck },
+      ]
       : []),
     ...(isRole('ROLE_ADMIN')
       ? [
-          { name: 'Governance Dashboard', path: '/admin', icon: SlidersHorizontal },
-          { name: 'Audit Logs', path: '/admin/audit', icon: Users },
-        ]
+        { name: 'Governance Dashboard', path: '/admin', icon: SlidersHorizontal },
+        { name: 'Audit Logs', path: '/admin/audit', icon: Users },
+      ]
       : []),
   ];
 
@@ -86,11 +86,10 @@ export const Navbar: React.FC = () => {
                     <Link
                       key={item.path}
                       to={item.path}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition ${
-                        isActive
+                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition ${isActive
                           ? 'bg-brand-50 text-brand-700 border border-brand-200/60'
                           : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/70'
-                      }`}
+                        }`}
                     >
                       <Icon className="w-3.5 h-3.5" />
                       {item.name}

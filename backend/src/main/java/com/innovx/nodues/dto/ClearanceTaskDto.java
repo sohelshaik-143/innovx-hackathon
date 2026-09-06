@@ -33,6 +33,12 @@ public class ClearanceTaskDto {
     private String verificationRemarks;
     private String referenceNumber;
 
+    // Student Candidate Context
+    private String studentName;
+    private String studentIdNumber;
+    private String studentRollNo;
+    private String studentProgram;
+
     // Latest Delay Information
     private DelayInfoDto delayInfo;
 

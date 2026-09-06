@@ -6,6 +6,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -28,5 +29,14 @@ public class PublicCertificateController {
 
         PublicCertificateVerifyDto result = certificateService.verifyPublicCertificate(certificateIdentifier, clientIp, userAgent);
         return ResponseEntity.ok(result);
+    }
+
+    @GetMapping(value = "/qr/{certificateIdentifier}", produces = MediaType.IMAGE_PNG_VALUE)
+    @Operation(summary = "Get scannable QR code PNG image", description = "Publicly streams a QR code PNG image pointing to certificate verification")
+    public ResponseEntity<byte[]> getCertificateQrImage(@PathVariable String certificateIdentifier) {
+        byte[] qrBytes = certificateService.getCertificateQrPng(certificateIdentifier);
+        return ResponseEntity.ok()
+                .contentType(MediaType.IMAGE_PNG)
+                .body(qrBytes);
     }
 }

@@ -4,13 +4,13 @@ import { useAuth } from '../context/AuthContext';
 import { ClearanceTask, DepartmentKpi, TaskStatus } from '../types';
 import { StatusBadge } from '../components/StatusBadge';
 import { TaskActionModal } from '../components/TaskActionModal';
-import { 
-  Building2, 
-  Search, 
-  Clock, 
-  AlertOctagon, 
-  CheckCircle2, 
-  XCircle, 
+import {
+  Building2,
+  Search,
+  Clock,
+  AlertOctagon,
+  CheckCircle2,
+  XCircle,
   AlertTriangle,
   Filter,
   ArrowUpDown,
@@ -111,11 +111,10 @@ export const DepartmentDashboard: React.FC = () => {
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
         <div
           onClick={() => setStatusFilter('PENDING')}
-          className={`cursor-pointer p-4 rounded-xl border transition shadow-2xs ${
-            statusFilter === 'PENDING'
+          className={`cursor-pointer p-4 rounded-xl border transition shadow-2xs ${statusFilter === 'PENDING'
               ? 'bg-slate-900 text-white border-slate-900'
               : 'bg-white border-slate-200 hover:border-slate-300'
-          }`}
+            }`}
         >
           <div className="flex items-center justify-between">
             <span className={`text-xs font-semibold ${statusFilter === 'PENDING' ? 'text-slate-300' : 'text-slate-500'}`}>
@@ -138,11 +137,10 @@ export const DepartmentDashboard: React.FC = () => {
 
         <div
           onClick={() => setStatusFilter('OVERDUE')}
-          className={`cursor-pointer p-4 rounded-xl border transition shadow-2xs ${
-            statusFilter === 'OVERDUE'
+          className={`cursor-pointer p-4 rounded-xl border transition shadow-2xs ${statusFilter === 'OVERDUE'
               ? 'bg-rose-900 text-white border-rose-900'
               : 'bg-white border-rose-200 hover:border-rose-300'
-          }`}
+            }`}
         >
           <div className="flex items-center justify-between">
             <span className={`text-xs font-semibold ${statusFilter === 'OVERDUE' ? 'text-rose-200' : 'text-rose-700'}`}>
@@ -157,11 +155,10 @@ export const DepartmentDashboard: React.FC = () => {
 
         <div
           onClick={() => setStatusFilter('DELAYED')}
-          className={`cursor-pointer p-4 rounded-xl border transition shadow-2xs ${
-            statusFilter === 'DELAYED'
+          className={`cursor-pointer p-4 rounded-xl border transition shadow-2xs ${statusFilter === 'DELAYED'
               ? 'bg-amber-800 text-white border-amber-800'
               : 'bg-white border-amber-200 hover:border-amber-300'
-          }`}
+            }`}
         >
           <div className="flex items-center justify-between">
             <span className={`text-xs font-semibold ${statusFilter === 'DELAYED' ? 'text-amber-200' : 'text-amber-700'}`}>
@@ -176,11 +173,10 @@ export const DepartmentDashboard: React.FC = () => {
 
         <div
           onClick={() => setStatusFilter('APPROVED')}
-          className={`cursor-pointer p-4 rounded-xl border transition shadow-2xs ${
-            statusFilter === 'APPROVED'
+          className={`cursor-pointer p-4 rounded-xl border transition shadow-2xs ${statusFilter === 'APPROVED'
               ? 'bg-emerald-900 text-white border-emerald-900'
               : 'bg-white border-emerald-200 hover:border-emerald-300'
-          }`}
+            }`}
         >
           <div className="flex items-center justify-between">
             <span className={`text-xs font-semibold ${statusFilter === 'APPROVED' ? 'text-emerald-200' : 'text-emerald-700'}`}>
@@ -195,11 +191,10 @@ export const DepartmentDashboard: React.FC = () => {
 
         <div
           onClick={() => setStatusFilter('REJECTED')}
-          className={`cursor-pointer p-4 rounded-xl border transition shadow-2xs ${
-            statusFilter === 'REJECTED'
+          className={`cursor-pointer p-4 rounded-xl border transition shadow-2xs ${statusFilter === 'REJECTED'
               ? 'bg-rose-950 text-white border-rose-950'
               : 'bg-white border-rose-200 hover:border-rose-300'
-          }`}
+            }`}
         >
           <div className="flex items-center justify-between">
             <span className={`text-xs font-semibold ${statusFilter === 'REJECTED' ? 'text-rose-200' : 'text-rose-700'}`}>
@@ -232,11 +227,10 @@ export const DepartmentDashboard: React.FC = () => {
             <button
               key={filterKey}
               onClick={() => setStatusFilter(filterKey)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition whitespace-nowrap ${
-                statusFilter === filterKey
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition whitespace-nowrap ${statusFilter === filterKey
                   ? 'bg-brand-600 text-white shadow-xs'
                   : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-              }`}
+                }`}
             >
               {filterKey}
             </button>
@@ -280,10 +274,11 @@ export const DepartmentDashboard: React.FC = () => {
                   <tr key={task.id} className="hover:bg-slate-50/70 transition">
                     <td className="px-5 py-3.5">
                       <div className="font-bold text-slate-900">
-                        {task.assignedStaffName || 'Student Pending'}
+                        {task.studentName || 'Student Pending'}
                       </div>
-                      <div className="text-[11px] text-slate-400 font-mono">
-                        Task #{task.id.substring(0, 8)}
+                      <div className="text-[11px] text-slate-500 font-mono">
+                        {task.studentIdNumber || task.studentRollNo || `Task #${task.id.substring(0, 8)}`}
+                        {task.studentProgram ? ` • ${task.studentProgram}` : ''}
                       </div>
                     </td>
 

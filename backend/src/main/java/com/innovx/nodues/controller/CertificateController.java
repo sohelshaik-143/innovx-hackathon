@@ -38,4 +38,14 @@ public class CertificateController {
                 .headers(headers)
                 .body(pdfBytes);
     }
+
+    @GetMapping(value = "/{certificateId}/qr", produces = MediaType.IMAGE_PNG_VALUE)
+    @Operation(summary = "Get certificate QR code PNG image", description = "Streams a scannable QR code PNG image pointing to public verification")
+    public ResponseEntity<byte[]> getCertificateQr(@PathVariable String certificateId) {
+        byte[] qrBytes = certificateService.getCertificateQrPng(certificateId);
+
+        return ResponseEntity.ok()
+                .contentType(MediaType.IMAGE_PNG)
+                .body(qrBytes);
+    }
 }

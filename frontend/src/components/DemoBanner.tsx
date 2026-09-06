@@ -34,11 +34,10 @@ export const DemoBanner: React.FC = () => {
               <button
                 key={account.user}
                 onClick={() => switchDemoUser(account.user, account.pass)}
-                className={`px-2 py-0.5 rounded text-[11px] font-medium transition whitespace-nowrap flex items-center gap-1 ${
-                  isCurrent
+                className={`px-2 py-0.5 rounded text-[11px] font-medium transition whitespace-nowrap flex items-center gap-1 ${isCurrent
                     ? 'bg-amber-600 text-white shadow-xs'
                     : 'bg-white/80 hover:bg-white text-slate-700 border border-amber-300/40 hover:border-amber-400'
-                }`}
+                  }`}
                 title={`Switch to ${account.label} (${account.user})`}
               >
                 {isCurrent && <UserCheck className="w-3 h-3" />}

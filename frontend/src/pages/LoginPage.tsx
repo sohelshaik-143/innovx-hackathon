@@ -1,7 +1,20 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
-import { Building2, ShieldCheck, ArrowRight, KeyRound, SearchCheck, CheckCircle2 } from 'lucide-react';
+import { 
+  Building2, 
+  ShieldCheck, 
+  ArrowRight, 
+  KeyRound, 
+  SearchCheck, 
+  CheckCircle2, 
+  Lock, 
+  User, 
+  GraduationCap, 
+  FileCheck2, 
+  Award,
+  Sparkles
+} from 'lucide-react';
 
 export const LoginPage: React.FC = () => {
   const { login, switchDemoUser, isLoading } = useAuth();
@@ -31,121 +44,200 @@ export const LoginPage: React.FC = () => {
   };
 
   const demoAccounts = [
-    { label: 'Student Alex', role: 'Student (Active Clearance)', user: 'student.alex', pass: 'student123', color: 'border-indigo-200 hover:border-indigo-400 bg-indigo-50/40' },
-    { label: 'Student Sarah', role: 'Student (New / Clean)', user: 'student.sarah', pass: 'student123', color: 'border-blue-200 hover:border-blue-400 bg-blue-50/40' },
-    { label: 'Library Staff', role: 'Department Verifier', user: 'staff.library', pass: 'staff123', color: 'border-emerald-200 hover:border-emerald-400 bg-emerald-50/40' },
-    { label: 'Hostel Staff', role: 'Department Verifier', user: 'staff.hostel', pass: 'staff123', color: 'border-amber-200 hover:border-amber-400 bg-amber-50/40' },
-    { label: 'Sports Staff', role: 'Department Verifier', user: 'staff.sports', pass: 'staff123', color: 'border-purple-200 hover:border-purple-400 bg-purple-50/40' },
-    { label: 'Accounts Staff', role: 'Department Verifier', user: 'staff.accounts', pass: 'staff123', color: 'border-cyan-200 hover:border-cyan-400 bg-cyan-50/40' },
-    { label: 'Dept Head (Library)', role: 'Escalations & Workload', user: 'head.library', pass: 'head123', color: 'border-slate-300 hover:border-slate-500 bg-slate-100/50' },
-    { label: 'College Admin', role: 'SLA & Governance', user: 'admin', pass: 'admin123', color: 'border-rose-200 hover:border-rose-400 bg-rose-50/40' },
+    { label: 'Student Alex', role: 'Candidate (Active Clearance)', user: 'student.alex', pass: 'student123', color: 'border-blue-200 hover:border-blue-400 bg-blue-50/60' },
+    { label: 'Student Sarah', role: 'Candidate (Clean / New)', user: 'student.sarah', pass: 'student123', color: 'border-sky-200 hover:border-sky-400 bg-sky-50/60' },
+    { label: 'Library Staff', role: 'Department Verifier (LIB)', user: 'staff.library', pass: 'staff123', color: 'border-emerald-200 hover:border-emerald-400 bg-emerald-50/60' },
+    { label: 'Hostel Staff', role: 'Department Verifier (HST)', user: 'staff.hostel', pass: 'staff123', color: 'border-amber-200 hover:border-amber-400 bg-amber-50/60' },
+    { label: 'Sports Staff', role: 'Department Verifier (SPT)', user: 'staff.sports', pass: 'staff123', color: 'border-teal-200 hover:border-teal-400 bg-teal-50/60' },
+    { label: 'Accounts Staff', role: 'Department Verifier (ACC)', user: 'staff.accounts', pass: 'staff123', color: 'border-purple-200 hover:border-purple-400 bg-purple-50/60' },
+    { label: 'Dept Head (LIB)', role: 'Executive Oversight', user: 'head.library', pass: 'head123', color: 'border-indigo-200 hover:border-indigo-400 bg-indigo-50/60' },
+    { label: 'University Admin', role: 'Governance & SLA', user: 'admin', pass: 'admin123', color: 'border-rose-200 hover:border-rose-400 bg-rose-50/60' },
   ];
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
-      <div className="sm:mx-auto sm:w-full sm:max-w-md text-center">
-        <div className="mx-auto w-14 h-14 rounded-2xl bg-brand-600 flex items-center justify-center text-white shadow-md">
-          <Building2 className="w-8 h-8" />
+    <div className="min-h-screen flex flex-col lg:flex-row bg-slate-50 font-sans">
+      {/* LEFT COLUMN: RGUKT Campus Visual & Institutional Identity */}
+      <div className="lg:w-1/2 bg-rgukt-navy text-white p-8 sm:p-12 lg:p-16 flex flex-col justify-between relative overflow-hidden">
+        {/* Background decorative university elements */}
+        <div className="absolute -right-20 -top-20 w-96 h-96 rounded-full bg-rgukt-primary/40 blur-3xl pointer-events-none" />
+        <div className="absolute -left-20 -bottom-20 w-96 h-96 rounded-full bg-amber-500/10 blur-3xl pointer-events-none" />
+
+        {/* Top University Brand */}
+        <div className="relative z-10 space-y-4">
+          <div className="flex items-center space-x-3.5">
+            <div className="w-12 h-12 rounded-2xl bg-white/10 backdrop-blur-md border border-amber-300/40 flex items-center justify-center shadow-md">
+              <svg className="w-7 h-7 text-amber-300" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 2L1 7l11 5 9-4.09V17h2V7L12 2zm0 13l-8-3.64V17c0 3.31 3.58 6 8 6s8-2.69 8-6v-5.64L12 15z" />
+              </svg>
+            </div>
+            <div>
+              <h1 className="text-base sm:text-lg font-black tracking-tight text-white leading-tight">
+                Rajiv Gandhi University of Knowledge Technologies
+              </h1>
+              <p className="text-xs text-amber-300/90 font-medium">
+                AP State University • Automated Institutional Governance
+              </p>
+            </div>
+          </div>
         </div>
-        <h1 className="mt-4 text-2xl font-extrabold text-slate-900 tracking-tight">
-          CampusClear Governance Portal
-        </h1>
-        <p className="mt-1 text-xs text-slate-500 font-medium">
-          Apex Institute of Technology • Automated No-Dues & Digital Clearance
-        </p>
+
+        {/* Middle Value Proposition & Workflow Story */}
+        <div className="relative z-10 py-12 space-y-6">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 border border-white/20 text-xs font-semibold text-amber-200">
+            <Sparkles className="w-3.5 h-3.5" />
+            <span>CampusClear Single-Source-of-Truth Clearance</span>
+          </div>
+
+          <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight leading-tight">
+            Eliminating physical paper forms through transparent digital clearance governance.
+          </h2>
+
+          <p className="text-xs text-slate-300 leading-relaxed max-w-lg">
+            A unified institutional platform connecting students, departmental verifiers, and executive leadership. Students submit one digital clearance request, departments audit verified records under a strict 48-hour SLA, and authentic certificates are issued with cryptographic QR verification.
+          </p>
+
+          {/* Workflow Pillars */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
+            <div className="p-3.5 rounded-xl bg-white/5 border border-white/10 backdrop-blur-xs space-y-1">
+              <FileCheck2 className="w-4 h-4 text-amber-300" />
+              <p className="text-xs font-bold text-white">Single Request</p>
+              <p className="text-[11px] text-slate-300">Parallel department verification</p>
+            </div>
+            <div className="p-3.5 rounded-xl bg-white/5 border border-white/10 backdrop-blur-xs space-y-1">
+              <ShieldCheck className="w-4 h-4 text-emerald-400" />
+              <p className="text-xs font-bold text-white">48h SLA</p>
+              <p className="text-[11px] text-slate-300">Real-time escalation &amp; tracking</p>
+            </div>
+            <div className="p-3.5 rounded-xl bg-white/5 border border-white/10 backdrop-blur-xs space-y-1">
+              <Award className="w-4 h-4 text-amber-300" />
+              <p className="text-xs font-bold text-white">Digital Certificate</p>
+              <p className="text-[11px] text-slate-300">Real ZXing scannable QR</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Bottom Institutional Seal Note */}
+        <div className="relative z-10 text-[11px] text-slate-400 pt-4 border-t border-white/10 flex items-center justify-between">
+          <span>Digital Campus Governance System</span>
+          <span>RGUKT-AP Verified Portal</span>
+        </div>
       </div>
 
-      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-lg px-4 sm:px-0">
-        <div className="bg-white py-8 px-6 shadow-xl rounded-2xl sm:px-10 border border-slate-200/80">
+      {/* RIGHT COLUMN: Institutional Login Form & Evaluation Persona Access */}
+      <div className="lg:w-1/2 flex items-center justify-center p-6 sm:p-12 lg:p-16">
+        <div className="w-full max-w-md space-y-6">
+          <div className="space-y-1.5">
+            <div className="flex items-center space-x-2">
+              <span className="text-xs font-black uppercase tracking-wider text-rgukt-primary px-2 py-0.5 rounded bg-rgukt-light border border-brand-200">
+                Institutional Access
+              </span>
+            </div>
+            <h2 className="text-2xl font-black text-slate-900 tracking-tight">
+              Sign In to CampusClear
+            </h2>
+            <p className="text-xs text-slate-500">
+              Enter your official RGUKT institutional credentials to continue.
+            </p>
+          </div>
+
           <form className="space-y-4" onSubmit={handleSubmit}>
             {error && (
-              <div className="p-3 rounded-lg bg-rose-50 border border-rose-200 text-xs text-rose-700 font-medium">
+              <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-700 font-semibold">
                 {error}
               </div>
             )}
 
             <div>
-              <label className="block text-xs font-semibold text-slate-700">
-                Username or Official Email
+              <label htmlFor="username" className="block text-xs font-bold text-slate-700">
+                Institutional ID or Email
               </label>
-              <div className="mt-1">
+              <div className="mt-1 relative">
+                <User className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
                 <input
+                  id="username"
+                  name="username"
                   type="text"
                   required
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  placeholder="e.g., student.alex or admin"
-                  className="w-full text-xs rounded-lg border border-slate-300 px-3.5 py-2.5 shadow-2xs focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition"
+                  placeholder="e.g. student.alex or admin"
+                  className="w-full text-xs rounded-xl border border-slate-300 pl-9 pr-3.5 py-2.5 shadow-2xs focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-700">
-                Password
-              </label>
-              <div className="mt-1">
+              <div className="flex items-center justify-between">
+                <label htmlFor="password" className="block text-xs font-bold text-slate-700">
+                  Password
+                </label>
+                <span className="text-[11px] text-slate-400 font-medium cursor-not-allowed">
+                  Forgot password?
+                </span>
+              </div>
+              <div className="mt-1 relative">
+                <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
                 <input
+                  id="password"
+                  name="password"
                   type="password"
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full text-xs rounded-lg border border-slate-300 px-3.5 py-2.5 shadow-2xs focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition"
+                  className="w-full text-xs rounded-xl border border-slate-300 pl-9 pr-3.5 py-2.5 shadow-2xs focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition"
                 />
               </div>
             </div>
 
-            <div className="pt-2">
-              <button
-                type="submit"
-                disabled={isLoading}
-                className="w-full flex justify-center items-center gap-2 py-2.5 px-4 border border-transparent rounded-lg shadow-xs text-xs font-bold text-white bg-brand-600 hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500 transition disabled:opacity-50"
-              >
-                {isLoading ? 'Authenticating...' : 'Sign In to Portal'}
-                <ArrowRight className="w-3.5 h-3.5" />
-              </button>
-            </div>
+            <button
+              id="login-btn"
+              type="submit"
+              disabled={isLoading}
+              className="w-full flex justify-center items-center py-2.5 px-4 rounded-xl shadow-xs text-xs font-bold text-white bg-rgukt-primary hover:bg-rgukt-navy transition disabled:opacity-50"
+            >
+              {isLoading ? 'Authenticating...' : 'Sign In to Portal'}
+              <ArrowRight className="ml-2 w-4 h-4" />
+            </button>
           </form>
 
-          {/* Quick Demo Login Picker */}
-          <div className="mt-8 pt-6 border-t border-slate-200">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-1.5 text-xs font-bold text-slate-800">
-                <KeyRound className="w-3.5 h-3.5 text-brand-600" />
-                <span>Single-Click Demo Accounts</span>
-              </div>
-              <span className="text-[10px] text-amber-700 bg-amber-100 font-semibold px-2 py-0.5 rounded-full">
-                Evaluation Presets
+          {/* Quick Evaluation Role Switcher */}
+          <div className="pt-4 border-t border-slate-200">
+            <div className="flex items-center justify-between mb-2.5">
+              <span className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+                <KeyRound className="w-3.5 h-3.5 text-rgukt-primary" />
+                <span>Evaluation Quick Login Switcher</span>
               </span>
+              <span className="text-[10px] text-slate-400 font-semibold">1-Click Test Access:</span>
             </div>
-            <p className="text-[11px] text-slate-500 mb-3 leading-relaxed">
-              Select any institutional role to automatically authenticate and evaluate the system:
-            </p>
 
             <div className="grid grid-cols-2 gap-2">
-              {demoAccounts.map((item) => (
+              {demoAccounts.map((acc) => (
                 <button
-                  key={item.user}
+                  key={acc.user}
                   type="button"
-                  onClick={() => switchDemoUser(item.user, item.pass)}
-                  className={`p-2.5 text-left rounded-lg border text-xs transition ${item.color}`}
+                  onClick={() => {
+                    setUsername(acc.user);
+                    setPassword(acc.pass);
+                    switchDemoUser(acc.user, acc.pass);
+                  }}
+                  className={`p-2.5 rounded-xl border text-left transition text-xs ${acc.color}`}
                 >
-                  <div className="font-bold text-slate-900 leading-tight">{item.label}</div>
-                  <div className="text-[10px] text-slate-500 mt-0.5">{item.role}</div>
+                  <p className="font-bold text-slate-900 leading-tight">{acc.label}</p>
+                  <p className="text-[10px] text-slate-500 truncate mt-0.5">{acc.role}</p>
                 </button>
               ))}
             </div>
           </div>
 
           {/* Public Verification Link */}
-          <div className="mt-6 text-center">
+          <div className="pt-2 text-center">
             <Link
               to="/verify-certificate"
-              className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-600 hover:text-brand-600 transition"
+              className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-700 hover:text-emerald-800 transition"
             >
               <SearchCheck className="w-4 h-4 text-emerald-600" />
-              Public Certificate Verification Portal
+              <span>Verify Official Digital No-Dues Certificate Online</span>
             </Link>
           </div>
         </div>

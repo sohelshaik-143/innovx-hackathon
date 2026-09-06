@@ -1,22 +1,22 @@
 import React, { useEffect, useState } from 'react';
 import api from '../api/client';
-import { 
-  AdminDashboardStats, 
-  SlaConfig, 
-  AuditLog, 
-  Department, 
-  DepartmentKpi 
+import {
+  AdminDashboardStats,
+  SlaConfig,
+  AuditLog,
+  Department,
+  DepartmentKpi
 } from '../types';
-import { 
-  SlidersHorizontal, 
-  Building2, 
-  ShieldCheck, 
-  Clock, 
-  AlertOctagon, 
-  CheckCircle2, 
-  Save, 
-  RefreshCw, 
-  Plus, 
+import {
+  SlidersHorizontal,
+  Building2,
+  ShieldCheck,
+  Clock,
+  AlertOctagon,
+  CheckCircle2,
+  Save,
+  RefreshCw,
+  Plus,
   FileText,
   Search,
   Users

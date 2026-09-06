@@ -225,6 +225,8 @@ public class ClearanceService {
                     .build();
         }
 
+        Student student = task.getClearanceRequest() != null ? task.getClearanceRequest().getStudent() : null;
+
         return ClearanceTaskDto.builder()
                 .id(task.getId())
                 .requestId(task.getClearanceRequest().getId())
@@ -243,6 +245,10 @@ public class ClearanceService {
                 .escalatedAt(task.getEscalatedAt())
                 .verificationRemarks(task.getVerificationRemarks())
                 .referenceNumber(task.getReferenceNumber())
+                .studentName(student != null && student.getUser() != null ? student.getUser().getFullName() : null)
+                .studentIdNumber(student != null ? student.getStudentId() : null)
+                .studentRollNo(student != null ? student.getRollNo() : null)
+                .studentProgram(student != null ? student.getProgram() : null)
                 .delayInfo(delayInfo)
                 .rejectionInfo(rejInfo)
                 .build();

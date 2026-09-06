@@ -4,7 +4,7 @@ export type ClearanceStatus = 'PENDING' | 'IN_PROGRESS' | 'APPROVED' | 'REJECTED
 
 export type TaskStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'DELAYED' | 'BLOCKED';
 
-export type DelayCategory = 
+export type DelayCategory =
   | 'RECORDS_UNAVAILABLE'
   | 'SYSTEM_ISSUE'
   | 'MANUAL_VERIFICATION'
@@ -80,6 +80,10 @@ export interface ClearanceTask {
   escalatedAt?: string;
   verificationRemarks?: string;
   referenceNumber?: string;
+  studentName?: string;
+  studentIdNumber?: string;
+  studentRollNo?: string;
+  studentProgram?: string;
   delayInfo?: DelayInfo;
   rejectionInfo?: RejectionInfo;
 }

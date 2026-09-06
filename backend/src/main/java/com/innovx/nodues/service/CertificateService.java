@@ -430,4 +430,18 @@ public class CertificateService {
                 .verifications(entries)
                 .build();
     }
+
+    @Transactional(readOnly = true)
+    public byte[] getCertificateQrPng(String certificateIdentifier) {
+        Certificate cert = certificateRepository.findByCertificateNumber(certificateIdentifier)
+                .or(() -> certificateRepository.findById(certificateIdentifier))
+                .orElseThrow(() -> new ResourceNotFoundException("Certificate not found: " + certificateIdentifier));
+
+        try {
+            return generateQrCodePng(cert.getQrVerificationUrl(), 240, 240);
+        } catch (Exception ex) {
+            log.error("Failed to generate QR code PNG for certificate: {}", certificateIdentifier, ex);
+            throw new RuntimeException("Could not generate QR code image", ex);
+        }
+    }
 }
