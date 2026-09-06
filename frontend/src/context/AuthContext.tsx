@@ -7,6 +7,7 @@ interface AuthContextType {
   token: string | null;
   isLoading: boolean;
   login: (username: string, password: string) => Promise<AuthResponse>;
+  register: (registerData: any) => Promise<AuthResponse>;
   logout: () => void;
   switchDemoUser: (username: string, password: string) => Promise<void>;
   unreadCount: number;
@@ -75,6 +76,38 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const register = async (registerData: any): Promise<AuthResponse> => {
+    setIsLoading(true);
+    try {
+      const res = await api.post<AuthResponse>('/auth/register', registerData);
+      const authData = res.data;
+
+      localStorage.setItem('nodues_token', authData.token);
+      setToken(authData.token);
+
+      const userInfo: User = {
+        id: authData.userId,
+        username: authData.username,
+        email: authData.email,
+        fullName: authData.fullName,
+        roles: authData.roles,
+        active: true,
+        demo: authData.isDemo,
+        departmentId: authData.departmentId,
+        departmentCode: authData.departmentCode,
+        departmentName: authData.departmentName,
+        head: authData.isHead,
+        studentId: authData.studentId,
+      };
+
+      localStorage.setItem('nodues_user', JSON.stringify(userInfo));
+      setUser(userInfo);
+      return authData;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const logout = () => {
     localStorage.removeItem('nodues_token');
     localStorage.removeItem('nodues_user');
@@ -105,6 +138,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         token,
         isLoading,
         login,
+        register,
         logout,
         switchDemoUser,
         unreadCount,

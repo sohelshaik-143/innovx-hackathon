@@ -199,6 +199,15 @@ export const LoginPage: React.FC = () => {
               {isLoading ? 'Authenticating...' : 'Sign In to Portal'}
               <ArrowRight className="ml-2 w-4 h-4" />
             </button>
+
+            <div className="pt-1 text-center">
+              <Link
+                to="/register"
+                className="w-full inline-flex justify-center items-center py-2.5 px-4 rounded-xl border border-brand-200 text-xs font-bold text-rgukt-primary bg-brand-50/60 hover:bg-brand-50 transition"
+              >
+                New user? Create an Institutional Account →
+              </Link>
+            </div>
           </form>
 
           {/* Quick Evaluation Role Switcher */}

@@ -10,6 +10,7 @@ import { AdminDashboard } from './pages/AdminDashboard';
 import { PublicVerifyPage } from './pages/PublicVerifyPage';
 import { CertificateViewPage } from './pages/CertificateViewPage';
 import { AccountPage } from './pages/AccountPage';
+import { RegisterPage } from './pages/RegisterPage';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode; requiredRole?: string }> = ({
   children,
@@ -44,6 +45,8 @@ export const AppContent: React.FC = () => {
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/register" element={<RegisterPage />} />
+      <Route path="/create-account" element={<RegisterPage />} />
       <Route path="/verify-certificate" element={<PublicVerifyPage />} />
       <Route path="/verify-certificate/:certificateNumber" element={<PublicVerifyPage />} />
 
