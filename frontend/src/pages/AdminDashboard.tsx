@@ -4,24 +4,29 @@ import {
   AdminDashboardStats,
   SlaConfig,
   AuditLog,
-  Department,
-  DepartmentKpi
+  Department
 } from '../types';
 import {
   SlidersHorizontal,
   Building2,
   ShieldCheck,
   Clock,
-  AlertOctagon,
+  AlertTriangle,
   CheckCircle2,
   Save,
   RefreshCw,
   Plus,
-  FileText,
   Search,
-  Users
+  Users,
+  Award,
+  Zap
 } from 'lucide-react';
 import { format } from 'date-fns';
+import { Card } from '../components/ui/Card';
+import { StatCard } from '../components/ui/StatCard';
+import { Button } from '../components/ui/Button';
+import { Skeleton } from '../components/ui/Skeleton';
+import { EmptyState } from '../components/ui/EmptyState';
 
 export const AdminDashboard: React.FC = () => {
   const [stats, setStats] = useState<AdminDashboardStats | null>(null);
@@ -46,25 +51,26 @@ export const AdminDashboard: React.FC = () => {
 
   // Audit filter state
   const [auditSearch, setAuditSearch] = useState('');
-  const [auditAction, setAuditAction] = useState('');
 
   const fetchAdminData = async () => {
     setLoading(true);
     try {
       const [statsRes, slaRes, logsRes, deptRes] = await Promise.all([
-        api.get<AdminDashboardStats>('/admin/stats'),
-        api.get<SlaConfig>('/admin/sla'),
-        api.get<{ content: AuditLog[] }>('/admin/audit-logs'),
-        api.get<Department[]>('/departments'),
+        api.get<AdminDashboardStats>('/admin/stats').catch(() => ({ data: null })),
+        api.get<SlaConfig>('/admin/sla').catch(() => ({ data: null })),
+        api.get<{ content: AuditLog[] }>('/admin/audit-logs').catch(() => ({ data: { content: [] } })),
+        api.get<Department[]>('/departments').catch(() => ({ data: [] })),
       ]);
 
-      setStats(statsRes.data);
-      setSlaConfig(slaRes.data);
-      setSlaHours(slaRes.data.slaHours || 48);
+      if (statsRes.data) setStats(statsRes.data);
+      if (slaRes.data) {
+        setSlaConfig(slaRes.data);
+        setSlaHours(slaRes.data.slaHours || 48);
+      }
       setAuditLogs(logsRes.data.content || []);
-      setDepartments(deptRes.data);
+      setDepartments(deptRes.data || []);
     } catch {
-      // ignore
+      // fallback empty state
     } finally {
       setLoading(false);
     }
@@ -98,10 +104,10 @@ export const AdminDashboard: React.FC = () => {
   const handleTriggerSlaCheck = async () => {
     try {
       const res = await api.post<{ escalatedTasksCount: number; message: string }>('/escalations/trigger-check');
-      alert(`SLA check completed: ${res.data.escalatedTasksCount} overdue tasks evaluated/escalated.`);
+      alert(res.data.message || `SLA audit check executed. ${res.data.escalatedTasksCount} tasks checked.`);
       fetchAdminData();
-    } catch {
-      alert('SLA check failed.');
+    } catch (err: any) {
+      alert(err.response?.data?.message || 'Failed to trigger SLA check.');
     }
   };
 
@@ -109,12 +115,12 @@ export const AdminDashboard: React.FC = () => {
     e.preventDefault();
     setCreatingDept(true);
     try {
-      await api.post('/admin/departments', {
-        code: deptCode.toUpperCase(),
-        name: deptName,
-        officialEmail: deptEmail,
-        officeLocation: deptLocation,
-        officialPhone: deptPhone,
+      await api.post('/departments', {
+        code: deptCode.trim().toUpperCase(),
+        name: deptName.trim(),
+        officialEmail: deptEmail.trim(),
+        officeLocation: deptLocation.trim(),
+        officialPhone: deptPhone.trim(),
         active: true,
       });
       setShowDeptModal(false);
@@ -131,341 +137,300 @@ export const AdminDashboard: React.FC = () => {
     }
   };
 
+  const filteredLogs = auditLogs.filter(
+    (log) =>
+      !auditSearch ||
+      log.username?.toLowerCase().includes(auditSearch.toLowerCase()) ||
+      log.action?.toLowerCase().includes(auditSearch.toLowerCase()) ||
+      log.details?.toLowerCase().includes(auditSearch.toLowerCase())
+  );
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <Skeleton className="h-20 w-full" />
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <Skeleton variant="card" />
+          <Skeleton variant="card" />
+          <Skeleton variant="card" />
+          <Skeleton variant="card" />
+        </div>
+        <Skeleton variant="table" />
+      </div>
+    );
+  }
+
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-      {/* Admin Title */}
-      <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div className="space-y-8">
+      {/* Header Banner */}
+      <div className="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-card flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-xl font-bold text-slate-900 tracking-tight">
-            Institutional Governance &amp; Administration
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-bold uppercase tracking-wider text-navy-700 px-2 py-0.5 rounded bg-navy-50 border border-navy-200">
+              Central Institutional Governance
+            </span>
+            <span className="text-xs font-semibold text-slate-400">• RGUKT Admin</span>
+          </div>
+          <h1 className="text-2xl sm:text-3xl font-black text-navy-700 tracking-tight mt-1">
+            University Governance Overview
           </h1>
-          <p className="text-xs text-slate-500 mt-1">
-            Global management of clearance departments, SLA accountability, escalations, and immutable audit logs.
+          <p className="text-xs text-slate-500 mt-0.5">
+            Supervising clearance workloads, configuring SLA compliance, and auditing system actions.
           </p>
         </div>
 
         <div className="flex items-center gap-2">
-          <button
+          <Button
+            variant="secondary"
             onClick={handleTriggerSlaCheck}
-            className="px-3 py-2 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl transition flex items-center gap-1.5"
-            title="Scan for SLA deadline breaches now"
+            leftIcon={<Zap className="w-3.5 h-3.5" />}
           >
-            <RefreshCw className="w-3.5 h-3.5 text-slate-500" />
-            Evaluate SLA Overdue Tasks
-          </button>
-
-          <button
-            onClick={() => setShowDeptModal(true)}
-            className="px-3 py-2 text-xs font-bold text-white bg-brand-600 hover:bg-brand-700 rounded-xl shadow-xs transition flex items-center gap-1.5"
+            Trigger SLA Audit
+          </Button>
+          <Button
+            variant="outline"
+            onClick={fetchAdminData}
+            leftIcon={<RefreshCw className="w-3.5 h-3.5" />}
           >
-            <Plus className="w-4 h-4" />
-            Add Department
-          </button>
+            Refresh
+          </Button>
         </div>
       </div>
 
-      {/* Global Counters */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-        <div className="p-5 bg-white rounded-2xl border border-slate-200 shadow-xs">
-          <span className="text-xs font-semibold text-slate-500">Total Active Requests</span>
-          <p className="text-2xl font-black text-slate-900 mt-2">
-            {stats ? stats.totalActiveRequests : 0}
-          </p>
-        </div>
-
-        <div className="p-5 bg-white rounded-2xl border border-slate-200 shadow-xs">
-          <span className="text-xs font-semibold text-slate-500">Completed & Certified</span>
-          <p className="text-2xl font-black text-emerald-700 mt-2">
-            {stats ? stats.completedRequests : 0}
-          </p>
-        </div>
-
-        <div className="p-5 bg-white rounded-2xl border border-slate-200 shadow-xs">
-          <span className="text-xs font-semibold text-slate-500">Pending Verification</span>
-          <p className="text-2xl font-black text-slate-700 mt-2">
-            {stats ? stats.pendingRequests : 0}
-          </p>
-        </div>
-
-        <div className="p-5 bg-white rounded-2xl border border-slate-200 shadow-xs">
-          <span className="text-xs font-semibold text-rose-700">Overdue SLA Breaches</span>
-          <p className="text-2xl font-black text-rose-700 mt-2">
-            {stats ? stats.overdueRequests : 0}
-          </p>
-        </div>
-
-        <div className="p-5 bg-white rounded-2xl border border-slate-200 shadow-xs">
-          <span className="text-xs font-semibold text-purple-700">Active Escalations</span>
-          <p className="text-2xl font-black text-purple-800 mt-2">
-            {stats ? stats.activeEscalations : 0}
-          </p>
-        </div>
+      {/* SYSTEM STATS GRID */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <StatCard
+          title="Total Active Requests"
+          value={stats?.totalActiveRequests}
+          subtitle="Registered active clearance requests"
+          icon={<Users className="w-5 h-5 text-navy-600" />}
+          color="navy"
+        />
+        <StatCard
+          title="Pending Requests"
+          value={stats?.pendingRequests}
+          subtitle="In-progress multi-dept review"
+          icon={<Clock className="w-5 h-5 text-amber-600" />}
+          color="amber"
+        />
+        <StatCard
+          title="Completed Clearances"
+          value={stats?.completedRequests}
+          subtitle="Certificates issued"
+          icon={<CheckCircle2 className="w-5 h-5 text-emerald-600" />}
+          color="emerald"
+        />
+        <StatCard
+          title="Overdue Requests"
+          value={stats?.overdueRequests}
+          subtitle="Overdue department tasks"
+          icon={<AlertTriangle className="w-5 h-5 text-rose-600" />}
+          color="rose"
+        />
       </div>
 
-      {/* SLA Configuration Card */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-xs p-6">
-        <div className="flex items-center gap-2 mb-2">
-          <SlidersHorizontal className="w-5 h-5 text-brand-600" />
-          <h2 className="text-sm font-bold text-slate-900">
-            Configurable Institutional SLA Policy
-          </h2>
-        </div>
-        <p className="text-xs text-slate-500 mb-6 max-w-2xl leading-relaxed">
-          The two-day accountability SLA is dynamically computed from each task's assignment timestamp. Modifying this threshold will automatically govern all future clearance task deadlines.
-        </p>
-
-        <form onSubmit={handleUpdateSla} className="max-w-md space-y-4">
-          <div>
-            <div className="flex justify-between items-center text-xs font-semibold text-slate-700 mb-1">
-              <label>Processing SLA (Hours)</label>
-              <span className="text-brand-700 font-bold">
-                {slaHours} Hours ({(slaHours / 24).toFixed(1)} Days)
-              </span>
+      {/* SLA CONFIG & DEPARTMENTS GRID */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* SLA Config Card */}
+        <Card
+          header={
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-bold text-navy-700 flex items-center gap-2">
+                <SlidersHorizontal className="w-4 h-4 text-olive-600" />
+                <span>Global SLA Duration Configuration</span>
+              </h3>
             </div>
-            <input
-              type="range"
-              min="12"
-              max="168"
-              step="12"
-              value={slaHours}
-              onChange={(e) => setSlaHours(Number(e.target.value))}
-              className="w-full accent-brand-600 cursor-pointer"
-            />
-            <div className="flex justify-between text-[10px] text-slate-400 mt-1 font-medium">
-              <span>12h</span>
-              <span>24h (1 day)</span>
-              <span className="font-bold text-slate-700">48h (Default 2 days)</span>
-              <span>72h (3 days)</span>
-              <span>7 days</span>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <button
-              type="submit"
-              disabled={savingSla}
-              className="px-4 py-2 text-xs font-bold text-white bg-brand-600 hover:bg-brand-700 rounded-xl shadow-xs transition flex items-center gap-1.5 disabled:opacity-50"
-            >
-              <Save className="w-3.5 h-3.5" />
-              {savingSla ? 'Updating...' : 'Save SLA Settings'}
-            </button>
+          }
+        >
+          <form onSubmit={handleUpdateSla} className="space-y-4">
             {slaSuccess && (
-              <span className="text-xs text-emerald-600 font-semibold flex items-center gap-1">
-                <CheckCircle2 className="w-3.5 h-3.5" />
-                Updated successfully
-              </span>
+              <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-800 font-semibold">
+                ✓ SLA duration updated to {slaHours} hours successfully.
+              </div>
             )}
-          </div>
-        </form>
-      </div>
 
-      {/* Department Performance Breakdown */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-xs p-6 space-y-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-sm font-bold text-slate-900">
-            Department Performance &amp; Accountability Records
-          </h2>
-          <span className="text-xs text-slate-500 font-medium">
-            {stats?.hasSufficientData ? 'Live Records' : 'Not enough data for percentage projections'}
-          </span>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {stats?.departmentPerformance?.map((dept) => (
-            <div
-              key={dept.departmentId}
-              className="p-4 rounded-xl border border-slate-200 bg-slate-50/60 space-y-3"
-            >
-              <div className="flex items-center justify-between">
-                <h3 className="text-xs font-bold text-slate-900 truncate">
-                  {dept.departmentName}
-                </h3>
-                <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-white border text-slate-600 font-semibold">
-                  {dept.departmentCode}
-                </span>
-              </div>
-
-              <div className="grid grid-cols-2 gap-2 text-xs">
-                <div className="p-2 rounded bg-white border border-slate-200">
-                  <span className="text-[10px] text-slate-500 block">Pending</span>
-                  <span className="text-sm font-bold text-slate-800">{dept.pendingCount}</span>
-                </div>
-                <div className="p-2 rounded bg-white border border-slate-200">
-                  <span className="text-[10px] text-slate-500 block">Approved</span>
-                  <span className="text-sm font-bold text-emerald-700">{dept.approvedCount}</span>
-                </div>
-                <div className="p-2 rounded bg-white border border-slate-200">
-                  <span className="text-[10px] text-slate-500 block">Delayed</span>
-                  <span className="text-sm font-bold text-amber-700">{dept.delayedCount}</span>
-                </div>
-                <div className="p-2 rounded bg-white border border-slate-200">
-                  <span className="text-[10px] text-slate-500 block">Overdue</span>
-                  <span className="text-sm font-bold text-rose-700">{dept.overdueCount}</span>
-                </div>
-              </div>
+            <div>
+              <label className="block text-xs font-bold text-slate-700">Department Audit SLA (Hours)</label>
+              <input
+                type="number"
+                min={1}
+                max={168}
+                required
+                value={slaHours}
+                onChange={(e) => setSlaHours(Number(e.target.value))}
+                className="mt-1 w-full text-xs rounded-xl border border-slate-300 px-3 py-2 bg-white"
+              />
+              <p className="text-[11px] text-slate-500 mt-1">
+                Tasks unreviewed after this timeframe are automatically flagged as SLA Breaches.
+              </p>
             </div>
-          ))}
-        </div>
+
+            <Button variant="primary" size="sm" type="submit" isLoading={savingSla} leftIcon={<Save className="w-3.5 h-3.5" />}>
+              Save SLA Configuration
+            </Button>
+          </form>
+        </Card>
+
+        {/* Departments List Card */}
+        <Card
+          className="lg:col-span-2"
+          header={
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-bold text-navy-700 flex items-center gap-2">
+                <Building2 className="w-4 h-4 text-olive-600" />
+                <span>Active University Departments ({departments.length})</span>
+              </h3>
+              <Button variant="outline" size="sm" onClick={() => setShowDeptModal(true)} leftIcon={<Plus className="w-3.5 h-3.5" />}>
+                Add Department
+              </Button>
+            </div>
+          }
+        >
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {departments.map((d) => (
+              <div key={d.id} className="p-3.5 rounded-xl border border-slate-200 bg-ivory-50/60 space-y-1">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-navy-700">{d.name}</span>
+                  <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-olive-100 text-olive-800 border border-olive-200">
+                    {d.code}
+                  </span>
+                </div>
+                <p className="text-[11px] text-slate-500 truncate">{d.officialEmail || 'department@campus.edu'}</p>
+                <p className="text-[10px] text-slate-400">{d.officeLocation || 'Campus Building'}</p>
+              </div>
+            ))}
+          </div>
+        </Card>
       </div>
 
-      {/* Immutable Audit Logs Explorer */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-xs p-6 space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div>
-            <h2 className="text-sm font-bold text-slate-900">
-              Institutional Audit Trail (Immutable)
-            </h2>
-            <p className="text-xs text-slate-500 mt-0.5">
-              Cryptographically timestamped log of approvals, rejections, delays, SLA adjustments, and certificate events.
-            </p>
+      {/* SYSTEM AUDIT TRAIL */}
+      <Card
+        header={
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 w-full">
+            <h3 className="text-sm font-bold text-navy-700 flex items-center gap-2">
+              <ShieldCheck className="w-4 h-4 text-olive-600" />
+              <span>System-Wide Audit Trail Log</span>
+            </h3>
+            <div className="relative w-full sm:w-64">
+              <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-2.5" />
+              <input
+                type="text"
+                value={auditSearch}
+                onChange={(e) => setAuditSearch(e.target.value)}
+                placeholder="Search audit log..."
+                className="w-full text-xs rounded-xl border border-slate-300 pl-8 pr-3 py-1.5 bg-white"
+              />
+            </div>
           </div>
-        </div>
-
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-slate-200 text-xs">
-            <thead className="bg-slate-50 font-bold text-slate-600">
-              <tr>
-                <th className="px-4 py-2.5 text-left">Timestamp</th>
-                <th className="px-4 py-2.5 text-left">User / Role</th>
-                <th className="px-4 py-2.5 text-left">Action</th>
-                <th className="px-4 py-2.5 text-left">Entity</th>
-                <th className="px-4 py-2.5 text-left">Details</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {auditLogs.slice(0, 15).map((log) => (
-                <tr key={log.id} className="hover:bg-slate-50/70">
-                  <td className="px-4 py-2.5 whitespace-nowrap text-slate-500 font-mono text-[11px]">
-                    {format(new Date(log.timestamp), 'dd MMM, hh:mm:ss a')}
-                  </td>
-                  <td className="px-4 py-2.5">
-                    <span className="font-bold text-slate-900 block">{log.username}</span>
-                    <span className="text-[10px] text-slate-400 font-medium">{log.role || 'SYSTEM'}</span>
-                  </td>
-                  <td className="px-4 py-2.5 font-mono text-[11px] font-bold text-brand-700">
-                    {log.action}
-                  </td>
-                  <td className="px-4 py-2.5">
-                    <span className="text-[11px] text-slate-700 block">{log.entityType}</span>
-                    <span className="text-[10px] text-slate-400 font-mono">#{log.entityId.substring(0, 8)}</span>
-                  </td>
-                  <td className="px-4 py-2.5 text-slate-600 text-[11px] max-w-sm truncate">
-                    {log.details || '—'}
-                  </td>
+        }
+      >
+        {filteredLogs.length === 0 ? (
+          <EmptyState
+            title="No Audit Records Found"
+            description="No system audit log entries match your search criteria."
+            icon={<ShieldCheck className="w-8 h-8 text-olive-600" />}
+          />
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs border-collapse">
+              <thead>
+                <tr className="bg-slate-50/80 border-b border-slate-200 text-slate-500 font-bold uppercase tracking-wider">
+                  <th className="py-3 px-4">Timestamp</th>
+                  <th className="py-3 px-4">User</th>
+                  <th className="py-3 px-4">Action</th>
+                  <th className="py-3 px-4">Details</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
+              </thead>
+              <tbody className="divide-y divide-slate-100 font-medium text-slate-800">
+                {filteredLogs.slice(0, 15).map((log) => (
+                  <tr key={log.id} className="hover:bg-slate-50/60 transition">
+                    <td className="py-3 px-4 text-slate-500 whitespace-nowrap">
+                      {log.timestamp ? format(new Date(log.timestamp), 'MMM dd, yyyy • hh:mm a') : 'N/A'}
+                    </td>
+                    <td className="py-3 px-4 font-bold text-slate-900">{log.username || 'System'}</td>
+                    <td className="py-3 px-4">
+                      <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-navy-50 text-navy-700 border border-navy-200">
+                        {log.action}
+                      </span>
+                    </td>
+                    <td className="py-3 px-4 text-slate-600 max-w-xs truncate">{log.details || '—'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </Card>
 
-      {/* Add Department Modal */}
+      {/* CREATE DEPARTMENT MODAL */}
       {showDeptModal && (
-        <div className="fixed inset-0 z-50 overflow-y-auto">
-          <div className="flex min-h-full items-center justify-center p-4 text-center sm:p-0">
-            <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs" onClick={() => setShowDeptModal(false)} />
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-navy-900/60 backdrop-blur-xs">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-modal border border-slate-200 space-y-4 animate-fade-in">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <h3 className="text-base font-bold text-navy-700">Add University Department</h3>
+              <button onClick={() => setShowDeptModal(false)} className="text-slate-400 hover:text-slate-600 text-sm font-bold">
+                ✕
+              </button>
+            </div>
 
-            <div className="relative transform overflow-hidden rounded-2xl bg-white text-left shadow-2xl transition-all sm:my-8 sm:w-full sm:max-w-md border border-slate-200">
-              <div className="bg-slate-50 px-6 py-4 border-b border-slate-200 flex items-center justify-between">
-                <h3 className="text-sm font-bold text-slate-900">
-                  Register Clearance Department
-                </h3>
-                <button
-                  onClick={() => setShowDeptModal(false)}
-                  className="text-slate-400 hover:text-slate-600"
-                >
-                  ✕
-                </button>
+            <form onSubmit={handleCreateDepartment} className="space-y-3">
+              <div>
+                <label className="block text-xs font-bold text-slate-700">Department Code (3-6 uppercase letters)</label>
+                <input
+                  type="text"
+                  required
+                  maxLength={6}
+                  value={deptCode}
+                  onChange={(e) => setDeptCode(e.target.value.toUpperCase())}
+                  placeholder="e.g. LAB"
+                  className="mt-1 w-full text-xs rounded-xl border border-slate-300 px-3 py-2 bg-white"
+                />
               </div>
 
-              <form onSubmit={handleCreateDepartment} className="p-6 space-y-4">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    Department Code (e.g., HOSTELS, PLACEMENT) *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={deptCode}
-                    onChange={(e) => setDeptCode(e.target.value)}
-                    placeholder="PLACEMENT"
-                    className="w-full text-xs rounded-lg border border-slate-300 px-3 py-2 focus:ring-2 focus:ring-brand-500"
-                  />
-                </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-700">Department Name</label>
+                <input
+                  type="text"
+                  required
+                  value={deptName}
+                  onChange={(e) => setDeptName(e.target.value)}
+                  placeholder="e.g. Science & Instrumentation Laboratory"
+                  className="mt-1 w-full text-xs rounded-xl border border-slate-300 px-3 py-2 bg-white"
+                />
+              </div>
 
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    Department Official Name *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={deptName}
-                    onChange={(e) => setDeptName(e.target.value)}
-                    placeholder="Training & Placement Cell"
-                    className="w-full text-xs rounded-lg border border-slate-300 px-3 py-2 focus:ring-2 focus:ring-brand-500"
-                  />
-                </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-700">Official Email</label>
+                <input
+                  type="email"
+                  required
+                  value={deptEmail}
+                  onChange={(e) => setDeptEmail(e.target.value)}
+                  placeholder="e.g. lab.clearance@campus.edu"
+                  className="mt-1 w-full text-xs rounded-xl border border-slate-300 px-3 py-2 bg-white"
+                />
+              </div>
 
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    Official Email *
-                  </label>
-                  <input
-                    type="email"
-                    required
-                    value={deptEmail}
-                    onChange={(e) => setDeptEmail(e.target.value)}
-                    placeholder="placement.clearance@campus.edu"
-                    className="w-full text-xs rounded-lg border border-slate-300 px-3 py-2 focus:ring-2 focus:ring-brand-500"
-                  />
-                </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-700">Office Location</label>
+                <input
+                  type="text"
+                  value={deptLocation}
+                  onChange={(e) => setDeptLocation(e.target.value)}
+                  placeholder="e.g. Science Block, Room 204"
+                  className="mt-1 w-full text-xs rounded-xl border border-slate-300 px-3 py-2 bg-white"
+                />
+              </div>
 
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    Physical Office Location *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={deptLocation}
-                    onChange={(e) => setDeptLocation(e.target.value)}
-                    placeholder="Career Services Building, Room 201"
-                    className="w-full text-xs rounded-lg border border-slate-300 px-3 py-2 focus:ring-2 focus:ring-brand-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    Official Phone (Optional)
-                  </label>
-                  <input
-                    type="text"
-                    value={deptPhone}
-                    onChange={(e) => setDeptPhone(e.target.value)}
-                    placeholder="+1 (555) 234-9988"
-                    className="w-full text-xs rounded-lg border border-slate-300 px-3 py-2 focus:ring-2 focus:ring-brand-500"
-                  />
-                </div>
-
-                <div className="pt-3 flex justify-end gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setShowDeptModal(false)}
-                    className="px-4 py-2 text-xs font-medium text-slate-700 hover:bg-slate-100 rounded-lg"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={creatingDept}
-                    className="px-4 py-2 text-xs font-bold text-white bg-brand-600 hover:bg-brand-700 rounded-lg shadow-xs transition"
-                  >
-                    {creatingDept ? 'Creating...' : 'Register Department'}
-                  </button>
-                </div>
-              </form>
-            </div>
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+                <Button variant="ghost" type="button" onClick={() => setShowDeptModal(false)}>
+                  Cancel
+                </Button>
+                <Button variant="primary" type="submit" isLoading={creatingDept}>
+                  Create Department
+                </Button>
+              </div>
+            </form>
           </div>
         </div>
       )}

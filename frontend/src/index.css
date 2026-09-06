@@ -1,51 +1,68 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Manrope:wght@400;500;600;700;800&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --color-olive-50: #F4F7EE;
+  --color-olive-100: #E9EFDA;
+  --color-olive-500: #667A3A;
+  --color-olive-600: #4F6228;
+  --color-navy-50: #E8F1FA;
+  --color-navy-500: #102A43;
+  --color-navy-700: #071A2B;
+  --color-bg-ivory: #F7F8F4;
+  --color-border: #E4E7EC;
+  --color-text-main: #17202A;
+  --color-text-muted: #667085;
+}
+
 @layer base {
-  body {
-    font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  html, body {
+    height: 100%;
+    background-color: #F7F8F4;
+    color: #17202A;
+    font-family: 'Inter', 'Manrope', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 }
 
-/* Smooth custom scrollbars */
+/* Custom Scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #f1f5f9;
+  background: #F7F8F4;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
+  background: #D2DFC3;
   border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+  background: #667A3A;
 }
 
-/* Explicit RGUKT Brand Colors for Maximum Contrast & Visibility */
-.bg-rgukt-navy {
-  background-color: #0b1d33 !important;
+/* Custom utility animations */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
 }
-.bg-rgukt-primary {
-  background-color: #0f3b6c !important;
+
+.animate-fade-in {
+  animation: fadeIn 0.25s ease-out forwards;
 }
-.text-rgukt-primary {
-  color: #0f3b6c !important;
-}
-.border-rgukt-primary {
-  border-color: #0f3b6c !important;
-}
-.bg-rgukt-light {
-  background-color: #e8f1fb !important;
-}
-.hover\:bg-rgukt-navy:hover {
-  background-color: #061221 !important;
-}
-.hover\:text-rgukt-primary:hover {
-  color: #061221 !important;
-}
+
+/* RGUKT Brand Colors Backward Compatibility */
+.bg-rgukt-navy { background-color: #071A2B !important; }
+.bg-rgukt-primary { background-color: #667A3A !important; }
+.text-rgukt-primary { color: #667A3A !important; }
+.border-rgukt-primary { border-color: #667A3A !important; }
+.bg-rgukt-light { background-color: #E9EFDA !important; }
+.hover\:bg-rgukt-navy:hover { background-color: #071A2B !important; }
+.hover\:text-rgukt-primary:hover { color: #4F6228 !important; }

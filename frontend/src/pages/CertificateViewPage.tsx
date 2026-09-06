@@ -7,13 +7,15 @@ import {
   Download,
   CheckCircle2,
   ArrowLeft,
-  Building2,
   Calendar,
-  QrCode,
   ShieldCheck,
-  ExternalLink
+  ExternalLink,
+  Printer
 } from 'lucide-react';
 import { format } from 'date-fns';
+import { Button } from '../components/ui/Button';
+import { Card } from '../components/ui/Card';
+import { Skeleton } from '../components/ui/Skeleton';
 
 export const CertificateViewPage: React.FC = () => {
   const { certificateId } = useParams<{ certificateId: string }>();
@@ -40,164 +42,116 @@ export const CertificateViewPage: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="py-20 text-center text-xs text-slate-500">
-        Loading certificate credentials...
+      <div className="max-w-4xl mx-auto py-12 space-y-6">
+        <Skeleton className="h-10 w-full" />
+        <Skeleton variant="card" className="h-96" />
       </div>
     );
   }
 
   if (errorMsg || !certificate) {
     return (
-      <div className="max-w-md mx-auto my-12 p-6 bg-white border border-slate-200 rounded-2xl text-center space-y-3">
-        <p className="text-xs text-rose-700 font-semibold">{errorMsg || 'Certificate not found'}</p>
-        <Link to="/student" className="text-xs text-brand-600 font-bold inline-block">
-          Return to Student Dashboard
-        </Link>
+      <div className="max-w-md mx-auto my-12">
+        <Card className="text-center space-y-3 py-8">
+          <p className="text-xs text-rose-700 font-semibold">{errorMsg || 'Certificate not found'}</p>
+          <Link to="/student">
+            <Button variant="outline" size="sm">
+              Return to Student Dashboard
+            </Button>
+          </Link>
+        </Card>
       </div>
     );
   }
 
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 py-10 space-y-6">
-      {/* Top action bar */}
-      <div className="flex items-center justify-between">
+    <div className="max-w-4xl mx-auto space-y-6">
+      {/* Action Bar */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-4 rounded-2xl border border-slate-200/80 shadow-card">
         <Link
           to="/student"
-          className="text-xs font-semibold text-slate-600 hover:text-brand-600 flex items-center gap-1"
+          className="text-xs font-bold text-slate-600 hover:text-olive-600 flex items-center gap-1.5"
         >
-          <ArrowLeft className="w-3.5 h-3.5" />
-          Back to Dashboard
+          <ArrowLeft className="w-4 h-4" />
+          <span>Back to Candidate Dashboard</span>
         </Link>
 
         <div className="flex items-center gap-2">
-          <a
-            href={certificate.qrVerificationUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 flex items-center gap-1 shadow-2xs transition"
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => window.print()}
+            leftIcon={<Printer className="w-3.5 h-3.5" />}
           >
-            <ExternalLink className="w-3.5 h-3.5" />
-            Public Verification
+            Print
+          </Button>
+
+          <a href={certificate.qrVerificationUrl} target="_blank" rel="noopener noreferrer">
+            <Button variant="secondary" size="sm" leftIcon={<ExternalLink className="w-3.5 h-3.5" />}>
+              Public Verification
+            </Button>
           </a>
 
-          <a
-            href={`/api/certificates/${certificate.id}/pdf`}
-            download
-            className="px-4 py-1.5 rounded-lg text-xs font-bold text-white bg-brand-600 hover:bg-brand-700 shadow-xs flex items-center gap-1.5 transition"
-          >
-            <Download className="w-3.5 h-3.5" />
-            Download Official PDF
+          <a href={`/api/certificates/${certificate.id}/pdf`} download>
+            <Button variant="primary" size="sm" leftIcon={<Download className="w-3.5 h-3.5" />}>
+              Download Official PDF
+            </Button>
           </a>
         </div>
       </div>
 
-      {/* Certificate Sheet Display */}
-      <div className="bg-white rounded-3xl border-2 border-slate-300 shadow-xl p-8 sm:p-12 relative overflow-hidden">
-        {/* Subtle Guilloche / Institutional Watermark */}
-        <div className="absolute inset-0 border-8 border-double border-slate-100 rounded-2xl pointer-events-none" />
-
-        {/* Certificate Header */}
-        <div className="text-center pb-6 border-b border-slate-200">
-          <div className="mx-auto w-12 h-12 rounded-xl bg-brand-600 text-white flex items-center justify-center mb-2 shadow-xs">
-            <Building2 className="w-7 h-7" />
+      {/* Official Certificate Sheet */}
+      <div className="bg-white rounded-3xl border-4 border-double border-olive-500/40 shadow-card-hover p-8 sm:p-12 relative overflow-hidden space-y-8">
+        {/* Certificate Watermark Seal */}
+        <div className="text-center space-y-2 pb-6 border-b border-slate-200">
+          <div className="w-16 h-16 rounded-2xl bg-olive-500 text-white flex items-center justify-center mx-auto shadow-md mb-3">
+            <Award className="w-9 h-9 text-olive-100" />
           </div>
-          <h1 className="text-xl sm:text-2xl font-black text-slate-900 uppercase tracking-tight">
-            {certificate.institutionName}
-          </h1>
-          <p className="text-xs font-extrabold text-brand-700 tracking-wider uppercase mt-1">
-            Official Digital No-Dues Clearance Certificate
+          <h2 className="text-lg sm:text-xl font-black text-navy-700 tracking-tight uppercase">
+            Rajiv Gandhi University of Knowledge Technologies
+          </h2>
+          <p className="text-xs font-bold text-olive-600 tracking-wider uppercase">
+            Official Institutional No-Dues &amp; Digital Clearance Certificate
           </p>
-          <p className="text-[11px] text-slate-400 mt-0.5">
-            Certificate Number: <span className="font-mono font-bold text-slate-700">{certificate.certificateNumber}</span>
+          <p className="text-[11px] text-slate-400 font-mono">
+            Certificate Serial: #{certificate.certificateNumber}
           </p>
         </div>
 
         {/* Certificate Body */}
-        <div className="py-8 space-y-6 text-center max-w-2xl mx-auto">
-          <p className="text-xs text-slate-600 uppercase tracking-wider font-semibold">
-            This is to officially certify that
+        <div className="text-center space-y-4 max-w-2xl mx-auto py-2">
+          <p className="text-xs text-slate-600">This official document certifies that student candidate</p>
+          <h3 className="text-2xl sm:text-3xl font-black text-navy-700 tracking-tight border-b-2 border-olive-500 pb-2 inline-block px-6">
+            {certificate.studentName}
+          </h3>
+          <p className="text-xs text-slate-600">
+            Roll Number: <span className="font-bold text-slate-900">{certificate.rollNo || certificate.studentId}</span> • Program: <span className="font-bold text-slate-900">{certificate.program || 'B.Tech'}</span>
           </p>
 
-          <div>
-            <h2 className="text-2xl font-black text-slate-900 tracking-tight">
-              {certificate.studentName}
-            </h2>
-            <div className="flex flex-wrap items-center justify-center gap-2 mt-1.5 text-xs text-slate-500 font-medium">
-              <span>Student ID: <strong className="text-slate-800">{certificate.studentId}</strong></span>
-              <span>•</span>
-              <span>University Roll No: <strong className="text-slate-800">{certificate.rollNo}</strong></span>
-            </div>
-            <p className="text-xs font-semibold text-brand-800 mt-1">
-              {certificate.program} ({certificate.batchYear})
-            </p>
-          </div>
-
-          <p className="text-xs text-slate-600 leading-relaxed max-w-xl mx-auto">
-            has fulfilled all institutional responsibilities and completed comprehensive digital clearance across all administrative, residential, athletic, and financial divisions of the college.
+          <p className="text-xs sm:text-sm text-slate-700 leading-relaxed pt-3">
+            has successfully fulfilled all institutional obligations and completed parallel clearance reconciliation across Central Library, Hostel Administration, Sports &amp; Athletics, and Accounts Divisions with clean records.
           </p>
         </div>
 
-        {/* Department Verification Table */}
-        <div className="border border-slate-200 rounded-xl overflow-hidden mb-8">
-          <div className="bg-slate-800 text-white text-[11px] font-bold px-4 py-2 flex items-center justify-between">
-            <span>Departmental Clearances Verified</span>
-            <span>Zero Outstanding Dues</span>
-          </div>
-          <div className="divide-y divide-slate-100 text-xs">
-            {certificate.verifications.map((v, idx) => (
-              <div key={idx} className="p-3 flex items-center justify-between bg-slate-50/50 hover:bg-slate-50">
-                <div>
-                  <span className="font-bold text-slate-900">{v.departmentName}</span>
-                  <span className="text-[10px] text-slate-500 block mt-0.5">
-                    Verified by: {v.verifiedBy} {v.referenceNumber && `(Ref: ${v.referenceNumber})`}
-                  </span>
-                </div>
-                <div className="text-right">
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-bold text-emerald-700 bg-emerald-100">
-                    <CheckCircle2 className="w-3 h-3" />
-                    Reconciled
-                  </span>
-                  <span className="text-[10px] text-slate-400 block mt-0.5">
-                    {v.verifiedAt ? format(new Date(v.verifiedAt), 'dd MMM yyyy') : 'Verified'}
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Security Stamp & Verification Footer */}
-        <div className="pt-6 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-6 text-xs">
-          <div className="text-center sm:text-left space-y-1">
-            <div className="flex items-center gap-1.5 font-bold text-slate-800">
-              <ShieldCheck className="w-4 h-4 text-emerald-600" />
-              <span>Cryptographic Tamper-Proof Stamp</span>
-            </div>
-            <p className="text-[10px] text-slate-500 max-w-xs font-mono break-all">
-              SHA-256: {certificate.verificationHash}
+        {/* Audit Details & Security Hash */}
+        <div className="pt-6 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-6">
+          <div className="space-y-1.5 text-xs text-slate-600 text-center sm:text-left">
+            <p className="flex items-center gap-1.5 justify-center sm:justify-start">
+              <Calendar className="w-3.5 h-3.5 text-olive-600" />
+              <span>Issued Date: <strong>{certificate.issueDate ? format(new Date(certificate.issueDate), 'MMMM dd, yyyy') : 'N/A'}</strong></span>
             </p>
-            <p className="text-[10px] text-slate-400">
-              Issued: {format(new Date(certificate.issueDate), 'dd MMMM yyyy, hh:mm a')}
+            <p className="flex items-center gap-1.5 justify-center sm:justify-start">
+              <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+              <span>Digital Verification Hash: <strong className="font-mono text-[10px] text-slate-700">{certificate.verificationHash || certificate.certificateNumber}</strong></span>
             </p>
           </div>
 
-          <div className="text-center p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-1">
-            <img
-              src={`/api/public/certificates/qr/${certificate.certificateNumber}`}
-              alt={`QR Code for Certificate ${certificate.certificateNumber}`}
-              className="w-24 h-24 mx-auto bg-white p-1 rounded-lg border border-slate-200 shadow-2xs object-contain"
-              onError={(e) => {
-                e.currentTarget.style.display = 'none';
-                const fallback = document.getElementById('qr-icon-fallback');
-                if (fallback) fallback.style.display = 'block';
-              }}
-            />
-            <div id="qr-icon-fallback" style={{ display: 'none' }}>
-              <QrCode className="w-16 h-16 text-slate-700 mx-auto" />
+          <div className="p-3 bg-white rounded-2xl border border-slate-200 shadow-xs text-center space-y-1">
+            <div className="w-20 h-20 bg-slate-900 text-white rounded-xl p-2 flex flex-col items-center justify-center font-mono text-[9px] break-all leading-tight">
+              <span>AUTHENTIC</span>
+              <span className="text-olive-400 font-bold">VERIFIED</span>
             </div>
-            <span className="text-[10px] font-semibold text-brand-700 block">
-              Scan to Verify Online
-            </span>
+            <span className="text-[9px] font-bold text-slate-400 block uppercase">QR Verification Ready</span>
           </div>
         </div>
       </div>

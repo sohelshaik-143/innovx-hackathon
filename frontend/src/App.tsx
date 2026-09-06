@@ -11,6 +11,7 @@ import { PublicVerifyPage } from './pages/PublicVerifyPage';
 import { CertificateViewPage } from './pages/CertificateViewPage';
 import { AccountPage } from './pages/AccountPage';
 import { RegisterPage } from './pages/RegisterPage';
+import { NotFoundPage } from './pages/NotFoundPage';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode; requiredRole?: string }> = ({
   children,
@@ -20,11 +21,10 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode; requiredRole?: strin
   if (!user) {
     return <Navigate to="/login" replace />;
   }
-  if (requiredRole && !user.roles.includes(requiredRole)) {
-    // Redirect to user's authorized home
-    if (user.roles.includes('ROLE_ADMIN')) return <Navigate to="/admin" replace />;
-    if (user.roles.includes('ROLE_DEPARTMENT_HEAD')) return <Navigate to="/head" replace />;
-    if (user.roles.includes('ROLE_DEPARTMENT_STAFF')) return <Navigate to="/department" replace />;
+  if (requiredRole && !user.roles?.includes(requiredRole)) {
+    if (user.roles?.includes('ROLE_ADMIN')) return <Navigate to="/admin" replace />;
+    if (user.roles?.includes('ROLE_DEPARTMENT_HEAD')) return <Navigate to="/head" replace />;
+    if (user.roles?.includes('ROLE_DEPARTMENT_STAFF')) return <Navigate to="/department" replace />;
     return <Navigate to="/student" replace />;
   }
   return <AppShell>{children}</AppShell>;
@@ -35,9 +35,9 @@ const HomeRedirect: React.FC = () => {
   if (!user) {
     return <Navigate to="/login" replace />;
   }
-  if (user.roles.includes('ROLE_ADMIN')) return <Navigate to="/admin" replace />;
-  if (user.roles.includes('ROLE_DEPARTMENT_HEAD')) return <Navigate to="/head" replace />;
-  if (user.roles.includes('ROLE_DEPARTMENT_STAFF')) return <Navigate to="/department" replace />;
+  if (user.roles?.includes('ROLE_ADMIN')) return <Navigate to="/admin" replace />;
+  if (user.roles?.includes('ROLE_DEPARTMENT_HEAD')) return <Navigate to="/head" replace />;
+  if (user.roles?.includes('ROLE_DEPARTMENT_STAFF')) return <Navigate to="/department" replace />;
   return <Navigate to="/student" replace />;
 };
 
@@ -113,8 +113,9 @@ export const AppContent: React.FC = () => {
         }
       />
 
+      <Route path="/404" element={<NotFoundPage />} />
       <Route path="/" element={<HomeRedirect />} />
-      <Route path="*" element={<Navigate to="/" replace />} />
+      <Route path="*" element={<NotFoundPage />} />
     </Routes>
   );
 };

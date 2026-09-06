@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import api from '../api/client';
 import { useAuth } from '../context/AuthContext';
-import { ClearanceRequestDetail, ClearanceTask, NotificationItem } from '../types';
+import { ClearanceRequestDetail, NotificationItem } from '../types';
 import { StatusBadge } from '../components/StatusBadge';
 import { TimelineView } from '../components/TimelineView';
 import { getDepartmentConfig } from '../config/departmentConfig';
@@ -14,31 +14,24 @@ import {
   FileText, 
   Award, 
   Mail, 
-  MapPin, 
-  Phone, 
-  Download, 
-  ExternalLink,
-  PlusCircle,
-  HelpCircle,
-  AlertCircle,
+  PlusCircle, 
+  ShieldCheck, 
   ArrowRight,
-  ShieldCheck,
-  Bell,
-  CheckCheck,
-  Calendar,
-  Sparkles
+  Sparkles,
+  RefreshCw
 } from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
+import { Card } from '../components/ui/Card';
+import { StatCard } from '../components/ui/StatCard';
+import { Button } from '../components/ui/Button';
+import { Skeleton } from '../components/ui/Skeleton';
+import { EmptyState } from '../components/ui/EmptyState';
 
 export const StudentDashboard: React.FC = () => {
   const { user } = useAuth();
   const [activeRequest, setActiveRequest] = useState<ClearanceRequestDetail | null>(null);
-  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [createdSuccessRequest, setCreatedSuccessRequest] = useState<ClearanceRequestDetail | null>(null);
-
-  // New request form state
   const [academicYear, setAcademicYear] = useState('2025-2026');
   const [semester, setSemester] = useState('Semester 8');
   const [reason, setReason] = useState('Graduation & Degree Award');
@@ -48,12 +41,8 @@ export const StudentDashboard: React.FC = () => {
   const fetchActiveRequest = async () => {
     setLoading(true);
     try {
-      const [reqRes, notifRes] = await Promise.all([
-        api.get<ClearanceRequestDetail>('/students/clearance/active').catch(() => ({ data: null })),
-        api.get<NotificationItem[]>('/notifications/recent').catch(() => ({ data: [] })),
-      ]);
-      setActiveRequest(reqRes.data || null);
-      setNotifications(notifRes.data || []);
+      const res = await api.get<ClearanceRequestDetail>('/students/clearance/active').catch(() => ({ data: null }));
+      setActiveRequest(res.data || null);
     } catch {
       setActiveRequest(null);
     } finally {
@@ -76,7 +65,7 @@ export const StudentDashboard: React.FC = () => {
         reason,
       });
       setActiveRequest(res.data);
-      setCreatedSuccessRequest(res.data);
+      setShowCreateModal(false);
     } catch (err: any) {
       setFormError(err.response?.data?.message || 'Failed to submit clearance request.');
     } finally {
@@ -84,7 +73,6 @@ export const StudentDashboard: React.FC = () => {
     }
   };
 
-  // Greeting based on real local time
   const getGreeting = () => {
     const hour = new Date().getHours();
     if (hour < 12) return 'Good Morning';
@@ -92,672 +80,305 @@ export const StudentDashboard: React.FC = () => {
     return 'Good Evening';
   };
 
-  // Real departmental status counts calculated strictly from active request tasks
   const tasks = activeRequest?.tasks || [];
   const approvedTasks = tasks.filter((t) => t.status === 'APPROVED');
   const pendingTasks = tasks.filter((t) => t.status === 'PENDING');
   const delayedTasks = tasks.filter((t) => t.status === 'DELAYED');
   const rejectedTasks = tasks.filter((t) => t.status === 'REJECTED');
 
+  const overallPercent = activeRequest?.progressPercentage ?? (tasks.length > 0 ? Math.round((approvedTasks.length / tasks.length) * 100) : 0);
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <Skeleton className="h-20 w-full" />
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <Skeleton variant="card" />
+          <Skeleton variant="card" />
+          <Skeleton variant="card" />
+          <Skeleton variant="card" />
+        </div>
+        <Skeleton variant="card" className="h-64" />
+      </div>
+    );
+  }
+
   return (
-    <div className="max-w-7xl mx-auto space-y-6">
-      {/* SCREEN 2: TOP HEADER — Greeting & Student Identification */}
-      <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div className="flex items-start gap-4">
-          <div className="w-12 h-12 rounded-2xl bg-rgukt-primary text-white flex items-center justify-center shrink-0 shadow-xs font-bold text-lg border border-amber-300/40">
-            {user?.fullName?.charAt(0) || 'S'}
+    <div className="space-y-8">
+      {/* GREETING & HEADER */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-200/80 shadow-card">
+        <div>
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-bold uppercase tracking-wider text-olive-600 px-2 py-0.5 rounded bg-olive-100 border border-olive-200">
+              Student Candidate Portal
+            </span>
+            <span className="text-xs font-semibold text-slate-400">• RGUKT</span>
           </div>
-          <div>
-            <div className="flex flex-wrap items-center gap-2">
-              <h1 className="text-xl font-bold text-slate-900 tracking-tight">
-                {getGreeting()}, {user?.fullName || 'Student Scholar'}
-              </h1>
-              <span className="text-xs font-mono font-bold px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-800 border border-slate-200">
-                ID: {user?.studentId || 'N/A'}
-              </span>
-              <span className="text-xs font-mono font-semibold px-2.5 py-0.5 rounded-full bg-rgukt-light text-rgukt-primary border border-brand-200">
-                Roll: {user?.rollNo || '2022CS0142'}
-              </span>
-            </div>
-            <p className="text-xs text-slate-500 mt-1">
-              Program: <strong className="text-slate-800">{user?.program || 'B.Tech Computer Science & Engineering'}</strong> • Rajiv Gandhi University of Knowledge Technologies
-            </p>
-          </div>
+          <h1 className="text-2xl sm:text-3xl font-black text-navy-700 tracking-tight mt-1">
+            {getGreeting()}, {user?.fullName || 'Student Candidate'}
+          </h1>
+          <p className="text-xs text-slate-500 mt-0.5">
+            Institutional Roll Number: <span className="font-bold text-slate-800">{user?.username || user?.studentId || 'Awaiting ID'}</span>
+          </p>
         </div>
 
-        {!activeRequest && !loading && (
-          <button
-            onClick={() => {
-              setCreatedSuccessRequest(null);
-              setShowCreateModal(true);
-            }}
-            className="inline-flex items-center gap-2 px-5 py-2.5 bg-rgukt-primary hover:bg-rgukt-navy text-white rounded-xl text-xs font-bold shadow-xs transition shrink-0"
+        <div className="flex items-center gap-2">
+          {!activeRequest && (
+            <Button
+              variant="primary"
+              onClick={() => setShowCreateModal(true)}
+              leftIcon={<PlusCircle className="w-4 h-4" />}
+            >
+              Initiate Clearance Request
+            </Button>
+          )}
+          <Button
+            variant="outline"
+            onClick={fetchActiveRequest}
+            leftIcon={<RefreshCw className="w-3.5 h-3.5" />}
           >
-            <PlusCircle className="w-4 h-4" />
-            Raise Clearance Request
-          </button>
-        )}
+            Refresh
+          </Button>
+        </div>
       </div>
 
-      {loading && (
-        <div className="py-20 text-center text-xs text-slate-500 space-y-2">
-          <div className="w-8 h-8 border-2 border-rgukt-primary border-t-transparent rounded-full animate-spin mx-auto" />
-          <p>Retrieving student institutional clearance records...</p>
-        </div>
-      )}
-
-      {/* Honest Empty State: No Active Request */}
-      {!loading && !activeRequest && (
-        <div className="bg-white rounded-2xl p-12 text-center border border-dashed border-slate-300 max-w-2xl mx-auto space-y-4 shadow-2xs">
-          <div className="w-14 h-14 rounded-2xl bg-rgukt-light text-rgukt-primary flex items-center justify-center mx-auto border border-brand-200">
-            <FileText className="w-7 h-7" />
-          </div>
-          <h2 className="text-base font-bold text-slate-900">No Active Clearance Request</h2>
-          <p className="text-xs text-slate-500 max-w-md mx-auto leading-relaxed">
-            Eliminate physical paper forms and repeated department visits. Initiate one digital clearance application to automatically coordinate Library, Hostels, Sports, and Accounts under the institutional 48-hour SLA.
-          </p>
-          <div>
-            <button
-              onClick={() => {
-                setCreatedSuccessRequest(null);
-                setShowCreateModal(true);
-              }}
-              className="inline-flex items-center gap-2 px-5 py-2.5 bg-rgukt-primary hover:bg-rgukt-navy text-white rounded-xl text-xs font-bold shadow-xs transition"
-            >
-              <PlusCircle className="w-4 h-4" />
-              Raise Clearance Request
-            </button>
-          </div>
-        </div>
-      )}
-
-      {!loading && activeRequest && (
+      {/* IF NO ACTIVE REQUEST: HONEST EMPTY STATE */}
+      {!activeRequest ? (
+        <Card className="py-12">
+          <EmptyState
+            title="No Active Clearance Request Found"
+            description="You do not currently have an active clearance request underway. Initiate a single clearance request to begin multi-department review under transparent 48-hour SLAs."
+            icon={<FileText className="w-8 h-8 text-olive-600" />}
+            actionLabel="Initiate Single Clearance Request"
+            onAction={() => setShowCreateModal(true)}
+          />
+        </Card>
+      ) : (
         <>
-          {/* Certificate Ready Banner if completed */}
-          {activeRequest.overallStatus === 'COMPLETED' && activeRequest.certificateNumber && (
-            <div className="bg-gradient-to-r from-emerald-700 to-teal-800 rounded-2xl p-6 text-white shadow-md flex flex-col md:flex-row items-center justify-between gap-4">
-              <div className="flex items-center space-x-4">
-                <div className="w-12 h-12 rounded-xl bg-white/20 backdrop-blur-xs flex items-center justify-center text-white shrink-0">
-                  <Award className="w-7 h-7" />
-                </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h2 className="text-base font-bold">Official No-Dues Certificate Issued!</h2>
-                    <span className="text-[11px] bg-white/20 px-2 py-0.5 rounded font-mono font-bold">
-                      {activeRequest.certificateNumber}
-                    </span>
+          {/* STATS OVERVIEW */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <StatCard
+              title="Overall Progress"
+              value={`${overallPercent}%`}
+              subtitle={`${approvedTasks.length} of ${tasks.length} departments cleared`}
+              icon={<ShieldCheck className="w-5 h-5 text-olive-600" />}
+              color="olive"
+            />
+            <StatCard
+              title="Pending Reviews"
+              value={pendingTasks.length}
+              subtitle="Awaiting staff audit"
+              icon={<Clock className="w-5 h-5 text-amber-600" />}
+              color="amber"
+            />
+            <StatCard
+              title="Cleared Departments"
+              value={approvedTasks.length}
+              subtitle="Dues reconciled"
+              icon={<CheckCircle2 className="w-5 h-5 text-emerald-600" />}
+              color="emerald"
+            />
+            <StatCard
+              title="SLA Breaches"
+              value={delayedTasks.length + rejectedTasks.length}
+              subtitle={rejectedTasks.length > 0 ? 'Action required' : 'Standard timeframe'}
+              icon={<AlertTriangle className="w-5 h-5 text-rose-600" />}
+              color="rose"
+            />
+          </div>
+
+          {/* MAIN CLEARANCE SUMMARY CARD */}
+          <Card
+            header={
+              <div className="flex items-center justify-between w-full">
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 rounded-xl bg-olive-100 border border-olive-200 flex items-center justify-center text-olive-700 font-bold">
+                    <FileText className="w-5 h-5" />
                   </div>
-                  <p className="text-xs text-emerald-100 mt-0.5">
-                    All institutional departments have approved your clearance. Your certificate is authentic and verifiable online.
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2 shrink-0">
-                <Link
-                  to={`/certificate/${activeRequest.certificateId}`}
-                  className="px-4 py-2 bg-white text-emerald-900 hover:bg-emerald-50 rounded-xl text-xs font-bold shadow-xs transition flex items-center gap-1.5"
-                >
-                  <Award className="w-4 h-4" />
-                  View Certificate
-                </Link>
-                <a
-                  href={`/api/certificates/${activeRequest.certificateId}/pdf`}
-                  download
-                  className="px-4 py-2 bg-emerald-950/60 hover:bg-emerald-950 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5"
-                >
-                  <Download className="w-4 h-4" />
-                  Download PDF
-                </a>
-              </div>
-            </div>
-          )}
-
-          {/* SECTION 8: BLOCKER-FIRST STUDENT UX */}
-          {rejectedTasks.length > 0 && (
-            <div className="space-y-3">
-              {rejectedTasks.map((task) => (
-                <div 
-                  key={task.id}
-                  className="bg-rose-50 border-2 border-rose-300 rounded-2xl p-5 shadow-sm space-y-3"
-                >
-                  <div className="flex items-center justify-between gap-2 border-b border-rose-200/80 pb-3">
-                    <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 rounded-lg bg-rose-600 text-white flex items-center justify-center shrink-0">
-                        <AlertTriangle className="w-4 h-4" />
-                      </div>
-                      <div>
-                        <span className="text-[10px] font-black uppercase tracking-wider text-rose-700 block">
-                          ACTION REQUIRED • CLEARANCE BLOCKED
-                        </span>
-                        <h2 className="text-sm font-bold text-rose-950">
-                          {task.departmentName} has rejected your clearance request.
-                        </h2>
-                      </div>
-                    </div>
-                    <span className="text-xs font-bold px-2.5 py-1 rounded bg-rose-200 text-rose-900">
-                      Hold Active
-                    </span>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
-                    <div className="space-y-1.5 bg-white/80 p-3.5 rounded-xl border border-rose-200">
-                      <span className="text-[10px] font-bold uppercase text-slate-500 block">
-                        Reason / Issue Identified:
-                      </span>
-                      <p className="font-bold text-rose-950 text-xs">
-                        {task.rejectionInfo?.reasonTitle || `${task.departmentName} requires your attention.`}
-                      </p>
-                      <p className="text-slate-700 text-xs leading-relaxed">
-                        {task.rejectionInfo?.explanation || 'A clearance hold has been recorded against your candidate record. Please resolve this hold to proceed.'}
-                      </p>
-                    </div>
-
-                    <div className="space-y-1.5 bg-white/80 p-3.5 rounded-xl border border-rose-200 flex flex-col justify-between">
-                      <div>
-                        <span className="text-[10px] font-bold uppercase text-rose-700 block">
-                          👉 What You Need To Do:
-                        </span>
-                        <p className="font-bold text-rose-950 text-xs mt-0.5 leading-relaxed">
-                          {task.rejectionInfo?.requiredStudentAction || 'Contact the department coordinator to settle outstanding records.'}
-                        </p>
-                      </div>
-
-                      <div className="pt-2 border-t border-rose-100 flex flex-wrap items-center gap-3 text-[11px] text-slate-600">
-                        <div className="flex items-center gap-1">
-                          <MapPin className="w-3 h-3 text-slate-400" />
-                          <span>{task.officeLocation}</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Mail className="w-3 h-3 text-slate-400" />
-                          <a href={`mailto:${task.officialEmail}`} className="text-rose-700 font-semibold hover:underline">
-                            {task.officialEmail}
-                          </a>
-                        </div>
-                        {task.officialPhone && (
-                          <div className="flex items-center gap-1">
-                            <Phone className="w-3 h-3 text-slate-400" />
-                            <span>{task.officialPhone}</span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-slate-900">
+                      Clearance Request #{activeRequest.certificateNumber || activeRequest.id.substring(0, 8)}
+                    </h3>
+                    <p className="text-xs text-slate-500">
+                      Initiated on {format(new Date(activeRequest.createdAt), 'MMM dd, yyyy • hh:mm a')}
+                    </p>
                   </div>
                 </div>
-              ))}
-            </div>
-          )}
-
-          {/* DELAY NOTICE IF APPLICABLE */}
-          {delayedTasks.length > 0 && (
-            <div className="space-y-3">
-              {delayedTasks.map((task) => (
-                <div 
-                  key={task.id}
-                  className="bg-amber-50 border border-amber-300 rounded-2xl p-5 space-y-2 text-xs text-amber-900 shadow-2xs"
-                >
-                  <div className="flex items-center justify-between gap-2 border-b border-amber-200/60 pb-2">
-                    <div className="flex items-center gap-2 font-bold text-amber-950 text-xs">
-                      <Clock className="w-4 h-4 text-amber-600" />
-                      <span>Clearance Delay Notice: {task.departmentName}</span>
-                    </div>
-                    <span className="text-[11px] font-bold px-2 py-0.5 rounded bg-amber-200 text-amber-900">
-                      Under Review / Delayed
-                    </span>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-1">
-                    <div>
-                      <span className="text-[10px] font-bold uppercase text-amber-800 block">Delay Category</span>
-                      <span className="font-semibold text-amber-950">{task.delayInfo?.category || 'Manual Verification'}</span>
-                    </div>
-                    <div>
-                      <span className="text-[10px] font-bold uppercase text-amber-800 block">Department Explanation</span>
-                      <p className="text-amber-900">{task.delayInfo?.explanation || 'Staff verification in progress.'}</p>
-                    </div>
-                    <div>
-                      <span className="text-[10px] font-bold uppercase text-amber-800 block">Expected Resolution</span>
-                      <p className="text-amber-950 font-bold">{task.delayInfo?.expectedResolutionDate || 'Pending'} • Next: {task.delayInfo?.nextAction || 'Verification'}</p>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* CLEARANCE REQUEST SUMMARY & PROGRESS GAUGE */}
-          <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-xs space-y-5">
-            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-4">
-              <div>
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-                  Clearance Request
-                </span>
-                <div className="flex items-center gap-2 mt-0.5">
-                  <span className="text-sm font-mono font-bold text-slate-900">
-                    #CLR-{activeRequest.id.substring(0, 8).toUpperCase()}
-                  </span>
-                  <span className="text-xs text-slate-500">
-                    • Academic Year: <strong>{activeRequest.academicYear}</strong> ({activeRequest.semester})
-                  </span>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-slate-500 hidden sm:inline">
-                  Submitted: {format(new Date(activeRequest.createdAt), 'dd MMM yyyy, hh:mm a')}
-                </span>
                 <StatusBadge status={activeRequest.overallStatus} size="md" />
               </div>
+            }
+          >
+            <div className="space-y-6">
+              {/* Progress bar */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-xs font-bold text-slate-700">
+                  <span>Department Verification Journey</span>
+                  <span className="text-olive-600">{overallPercent}% Complete</span>
+                </div>
+                <div className="h-3 w-full bg-slate-100 rounded-full overflow-hidden border border-slate-200">
+                  <div
+                    className="h-full bg-olive-500 transition-all duration-500"
+                    style={{ width: `${overallPercent}%` }}
+                  />
+                </div>
+              </div>
+
+              {/* Timeline View */}
+              {activeRequest.timeline && activeRequest.timeline.length > 0 && (
+                <TimelineView events={activeRequest.timeline} />
+              )}
+
+              {/* Digital Certificate Download Banner (If Cleared) */}
+              {(activeRequest.overallStatus === 'APPROVED' || activeRequest.overallStatus === 'COMPLETED') && (
+                <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 flex flex-col sm:flex-row items-center justify-between gap-4">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-bold">
+                      <Award className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-bold text-emerald-950">Official No-Dues Digital Certificate Issued</h4>
+                      <p className="text-xs text-emerald-800">All departments have verified clean records. Download your QR-signed certificate.</p>
+                    </div>
+                  </div>
+                  <Link to={`/certificate/${activeRequest.certificateId || activeRequest.id}`}>
+                    <Button variant="primary" size="sm" rightIcon={<ArrowRight className="w-3.5 h-3.5" />}>
+                      View Certificate
+                    </Button>
+                  </Link>
+                </div>
+              )}
             </div>
+          </Card>
 
-            {/* REAL PROGRESS BAR & EXPLICIT COUNTERS */}
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-bold text-slate-800">
-                  {approvedTasks.length} of {tasks.length} departments cleared
-                </span>
-                <span className="text-xs font-bold text-rgukt-primary">
-                  {activeRequest.progressPercentage}% Completed
-                </span>
-              </div>
-
-              {/* Progress Bar */}
-              <div className="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden mb-3">
-                <div
-                  className="bg-rgukt-primary h-2.5 rounded-full transition-all duration-500 ease-out"
-                  style={{ width: `${activeRequest.progressPercentage}%` }}
-                />
-              </div>
-
-              {/* Real Counters (Strictly from backend response) */}
-              <div className="flex flex-wrap items-center gap-4 text-xs font-semibold text-slate-600 pt-1">
-                <span className="text-emerald-700 font-bold">Approved: {approvedTasks.length}</span>
-                <span className="text-slate-300">•</span>
-                <span className="text-slate-600">Pending: {pendingTasks.length}</span>
-                {delayedTasks.length > 0 && (
-                  <>
-                    <span className="text-slate-300">•</span>
-                    <span className="text-amber-700">Delayed: {delayedTasks.length}</span>
-                  </>
-                )}
-                {rejectedTasks.length > 0 && (
-                  <>
-                    <span className="text-slate-300">•</span>
-                    <span className="text-rose-700 font-bold">Rejected: {rejectedTasks.length}</span>
-                  </>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* DEPARTMENT STATUS CARDS */}
-          <div>
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <h2 className="text-sm font-bold text-slate-900 tracking-tight">
-                  Department Clearance Audit Status
-                </h2>
-                <p className="text-xs text-slate-500">
-                  Real records from institutional department ledgers.
-                </p>
-              </div>
-              <span className="text-xs text-slate-500 font-semibold bg-slate-100 px-2.5 py-1 rounded-lg border border-slate-200">
-                SLA: 48 Hours
+          {/* DEPARTMENT CLEARANCE CARDS GRID */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-base font-bold text-navy-700 flex items-center gap-2">
+                <Building2 className="w-4 h-4 text-olive-600" />
+                <span>Department Clearance Breakdown</span>
+              </h3>
+              <span className="text-xs font-semibold text-slate-400">
+                Real-Time Department Statuses
               </span>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {tasks.map((task) => {
                 const config = getDepartmentConfig(task.departmentCode);
-                const Icon = config.icon;
-
                 return (
-                  <div
-                    key={task.id}
-                    className={`bg-white rounded-2xl p-5 border transition shadow-xs flex flex-col justify-between ${
-                      task.status === 'APPROVED'
-                        ? 'border-emerald-200 bg-emerald-50/15'
-                        : task.status === 'DELAYED'
-                        ? 'border-amber-200 bg-amber-50/15'
-                        : task.status === 'REJECTED'
-                        ? 'border-rose-200 bg-rose-50/15'
-                        : 'border-slate-200 hover:border-slate-300'
-                    }`}
-                  >
-                    <div>
-                      {/* Top Row */}
-                      <div className="flex items-start justify-between gap-2">
+                  <Card key={task.id} className="hover:border-olive-300">
+                    <div className="space-y-4">
+                      <div className="flex items-start justify-between gap-3">
                         <div className="flex items-center space-x-3">
-                          <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${config.badgeBg} ${config.badgeText} border ${config.badgeBorder}`}>
-                            <Icon className="w-4 h-4" />
+                          <div className="w-10 h-10 rounded-xl bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-700 font-bold text-sm">
+                            {task.departmentCode?.substring(0, 3)}
                           </div>
                           <div>
-                            <h3 className="text-xs font-bold text-slate-900 leading-tight">
+                            <h4 className="text-xs sm:text-sm font-bold text-slate-900 leading-tight">
                               {task.departmentName}
-                            </h3>
-                            <span className="text-[10px] font-mono text-slate-500 font-semibold">
-                              Code: {task.departmentCode}
-                            </span>
+                            </h4>
+                            <p className="text-[11px] text-slate-400 mt-0.5">{task.officeLocation || 'Campus Office'}</p>
                           </div>
                         </div>
                         <StatusBadge status={task.status} size="sm" />
                       </div>
 
-                      {/* Approval Remarks */}
-                      {task.status === 'APPROVED' && (
-                        <div className="mt-3.5 p-3 rounded-xl bg-emerald-50/80 border border-emerald-200 text-xs text-emerald-950 space-y-1">
-                          <div className="flex items-center gap-1.5 font-bold text-[11px]">
-                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                            <span>Verification Record Reconciled</span>
-                          </div>
-                          <p className="text-xs text-emerald-900">
-                            {task.verificationRemarks || 'Verified against department records. No outstanding dues.'}
-                          </p>
-                          {task.referenceNumber && (
-                            <p className="text-[11px] font-mono text-emerald-800">
-                              Ref: {task.referenceNumber}
-                            </p>
-                          )}
-                        </div>
-                      )}
-
-                      {/* Delay Details */}
-                      {task.status === 'DELAYED' && task.delayInfo && (
-                        <div className="mt-3.5 p-3 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-900 space-y-1">
-                          <div className="flex items-center gap-1.5 font-bold text-amber-950 text-[11px]">
-                            <Clock className="w-3.5 h-3.5 text-amber-600" />
-                            <span>Delay: {task.delayInfo.category}</span>
-                          </div>
-                          <p className="text-xs text-amber-900">
-                            {task.delayInfo.explanation}
-                          </p>
-                          <p className="text-[11px] text-amber-800 font-medium">
-                            Expected: <strong>{task.delayInfo.expectedResolutionDate}</strong> • Next: {task.delayInfo.nextAction}
-                          </p>
-                        </div>
-                      )}
-
-                      {/* Rejection Details */}
-                      {task.status === 'REJECTED' && task.rejectionInfo && (
-                        <div className="mt-3.5 p-3 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-900 space-y-1">
-                          <div className="flex items-center gap-1.5 font-bold text-rose-950 text-[11px]">
-                            <AlertTriangle className="w-3.5 h-3.5 text-rose-600" />
-                            <span>Issue: {task.rejectionInfo.reasonTitle}</span>
-                          </div>
-                          <p className="text-xs text-rose-900">
-                            {task.rejectionInfo.explanation}
-                          </p>
-                          <div className="p-2 bg-white/80 rounded border border-rose-200 font-semibold text-rose-950 text-[11px]">
-                            👉 Action Required: {task.rejectionInfo.requiredStudentAction}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Pending state notice */}
-                      {task.status === 'PENDING' && (
-                        <div className="mt-3.5 p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-600 space-y-1">
-                          <div className="flex items-center gap-1.5 font-semibold text-slate-800 text-[11px]">
-                            <Clock className="w-3.5 h-3.5 text-slate-500" />
-                            <span>Awaiting departmental verification</span>
-                          </div>
-                          <p className="text-[11px] text-slate-500">
-                            Target SLA resolution date: {format(new Date(task.dueAt), 'dd MMM yyyy')}.
-                          </p>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Responsible Office Contact Details */}
-                    <div className="mt-4 pt-3 border-t border-slate-100 space-y-1 text-[11px] text-slate-500">
-                      <div className="flex items-center gap-1.5">
-                        <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                        <span className="truncate">{task.officeLocation}</span>
+                      {/* Staff remarks */}
+                      <div className="p-3 rounded-xl bg-ivory-50 border border-slate-200/60 text-xs space-y-1">
+                        <span className="font-bold text-slate-700 block">Department Verification Remarks:</span>
+                        <p className="text-slate-600 leading-relaxed italic">
+                          {task.verificationRemarks || 'No remarks added by department verifier yet.'}
+                        </p>
                       </div>
-                      <div className="flex items-center justify-between gap-2">
-                        <div className="flex items-center gap-1.5 truncate">
-                          <Mail className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                          <a href={`mailto:${task.officialEmail}`} className="truncate hover:text-rgukt-primary hover:underline">
-                            {task.officialEmail}
-                          </a>
-                        </div>
-                        {task.officialPhone && (
-                          <div className="flex items-center gap-1 text-slate-400 whitespace-nowrap">
-                            <Phone className="w-3 h-3" />
-                            <span>{task.officialPhone}</span>
-                          </div>
-                        )}
+
+                      {/* Contact Info */}
+                      <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
+                        <span className="flex items-center gap-1">
+                          <Mail className="w-3 h-3 text-slate-400" />
+                          <span>{task.officialEmail || 'department@campus.edu'}</span>
+                        </span>
+                        <span className="text-slate-400">
+                          {task.completedAt ? formatDistanceToNow(new Date(task.completedAt), { addSuffix: true }) : 'Awaiting audit'}
+                        </span>
                       </div>
                     </div>
-                  </div>
+                  </Card>
                 );
               })}
-            </div>
-          </div>
-
-          {/* SECTION 9: LOWER SECTION — THREE USEFUL MODULES */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* A. RECENT NOTIFICATIONS */}
-            <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-xs space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Bell className="w-4 h-4 text-rgukt-primary" />
-                  <h3 className="text-sm font-bold text-slate-900">Recent Notifications</h3>
-                </div>
-                <span className="text-[10px] font-semibold text-slate-400">Real Log</span>
-              </div>
-
-              {notifications.length === 0 ? (
-                <div className="py-8 text-center text-xs text-slate-500">
-                  No new notifications.
-                </div>
-              ) : (
-                <div className="space-y-2.5 max-h-72 overflow-y-auto">
-                  {notifications.slice(0, 5).map((n) => (
-                    <div
-                      key={n.id}
-                      className={`p-3 rounded-xl border text-xs space-y-1 transition ${
-                        n.read ? 'bg-slate-50/60 border-slate-200' : 'bg-rgukt-light/40 border-brand-200/80'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className="font-bold text-slate-900 text-[11px] truncate max-w-[180px]">
-                          {n.title}
-                        </span>
-                        <span className="text-[10px] text-slate-400 shrink-0">
-                          {formatDistanceToNow(new Date(n.createdAt), { addSuffix: true })}
-                        </span>
-                      </div>
-                      <p className="text-[11px] text-slate-600 leading-snug line-clamp-2">
-                        {n.message}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* B. YOUR TIMELINE */}
-            <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-xs space-y-4 lg:col-span-2">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <ShieldCheck className="w-4 h-4 text-rgukt-primary" />
-                  <h3 className="text-sm font-bold text-slate-900">Your Clearance Timeline</h3>
-                </div>
-                <span className="text-[10px] font-semibold text-slate-400">Accountability Chain</span>
-              </div>
-
-              <TimelineView events={activeRequest.timeline} />
-            </div>
-          </div>
-
-          {/* C. QUICK ACTIONS */}
-          <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <h3 className="text-xs font-bold text-slate-900">Candidate Quick Actions</h3>
-              <p className="text-[11px] text-slate-500">Official tools and verifiable resources for your clearance</p>
-            </div>
-
-            <div className="flex flex-wrap items-center gap-2">
-              {activeRequest.certificateId && (
-                <>
-                  <Link
-                    to={`/certificate/${activeRequest.certificateId}`}
-                    className="px-3.5 py-2 rounded-xl text-xs font-bold text-slate-700 bg-slate-50 hover:bg-slate-100 border border-slate-200 flex items-center gap-1.5 transition"
-                  >
-                    <Award className="w-3.5 h-3.5 text-amber-600" />
-                    <span>View Certificate</span>
-                  </Link>
-
-                  <a
-                    href={`/api/certificates/${activeRequest.certificateId}/pdf`}
-                    download
-                    className="px-3.5 py-2 rounded-xl text-xs font-bold text-white bg-rgukt-primary hover:bg-rgukt-navy flex items-center gap-1.5 transition shadow-xs"
-                  >
-                    <Download className="w-3.5 h-3.5" />
-                    <span>Download PDF</span>
-                  </a>
-                </>
-              )}
-
-              <Link
-                to="/verify-certificate"
-                className="px-3.5 py-2 rounded-xl text-xs font-bold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 flex items-center gap-1.5 transition"
-              >
-                <ExternalLink className="w-3.5 h-3.5 text-emerald-600" />
-                <span>Verify Online</span>
-              </Link>
             </div>
           </div>
         </>
       )}
 
-      {/* SCREEN 3: RAISE CLEARANCE REQUEST MODAL WITH SUCCESS STATE */}
+      {/* CREATE CLEARANCE MODAL */}
       {showCreateModal && (
-        <div className="fixed inset-0 z-50 overflow-y-auto">
-          <div className="flex min-h-full items-center justify-center p-4 text-center sm:p-0">
-            <div
-              className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs transition-opacity"
-              onClick={() => setShowCreateModal(false)}
-            />
-
-            <div className="relative transform overflow-hidden rounded-2xl bg-white text-left shadow-2xl transition-all sm:my-8 sm:w-full sm:max-w-md border border-slate-200">
-              <div className="bg-slate-50 px-6 py-4 border-b border-slate-200 flex items-center justify-between">
-                <div>
-                  <h3 className="text-sm font-bold text-slate-900">
-                    Raise Clearance Request
-                  </h3>
-                  <p className="text-xs text-slate-500 mt-0.5">
-                    Submit one request to coordinate all departments
-                  </p>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-navy-900/60 backdrop-blur-xs">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-modal border border-slate-200 space-y-5 animate-fade-in">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div className="flex items-center space-x-2">
+                <div className="w-8 h-8 rounded-lg bg-olive-100 text-olive-700 flex items-center justify-center font-bold">
+                  <Sparkles className="w-4 h-4" />
                 </div>
-                <button
-                  onClick={() => setShowCreateModal(false)}
-                  className="text-slate-400 hover:text-slate-600 rounded-md p-1"
+                <h3 className="text-base font-bold text-navy-700">Initiate Single Clearance</h3>
+              </div>
+              <button onClick={() => setShowCreateModal(false)} className="text-slate-400 hover:text-slate-600 text-sm font-bold">
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateRequest} className="space-y-4">
+              {formError && (
+                <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-700 font-semibold">
+                  {formError}
+                </div>
+              )}
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700">Academic Year</label>
+                <select
+                  value={academicYear}
+                  onChange={(e) => setAcademicYear(e.target.value)}
+                  className="mt-1 w-full text-xs rounded-xl border border-slate-300 px-3 py-2 bg-white"
                 >
-                  ✕
-                </button>
+                  <option>2025-2026</option>
+                  <option>2024-2025</option>
+                </select>
               </div>
 
-              {createdSuccessRequest ? (
-                /* Proper Success State */
-                <div className="p-6 text-center space-y-4">
-                  <div className="w-12 h-12 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto border border-emerald-200">
-                    <CheckCircle2 className="w-6 h-6" />
-                  </div>
-                  <div>
-                    <h4 className="text-base font-bold text-slate-900">Clearance Request Submitted</h4>
-                    <p className="text-xs text-slate-500 mt-1">
-                      Your single digital application has been created and assigned across all 4 institutional departments.
-                    </p>
-                  </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-700">Semester</label>
+                <select
+                  value={semester}
+                  onChange={(e) => setSemester(e.target.value)}
+                  className="mt-1 w-full text-xs rounded-xl border border-slate-300 px-3 py-2 bg-white"
+                >
+                  <option>Semester 8</option>
+                  <option>Semester 7</option>
+                  <option>Semester 6</option>
+                </select>
+              </div>
 
-                  <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-left space-y-1.5">
-                    <div className="flex justify-between">
-                      <span className="text-slate-500">Request ID:</span>
-                      <span className="font-mono font-bold text-slate-900">#{createdSuccessRequest.id.substring(0, 8).toUpperCase()}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-slate-500">Overall Status:</span>
-                      <span className="font-bold text-amber-700">In Progress</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-slate-500">SLA Window:</span>
-                      <span className="font-semibold text-slate-800">48 Hours Per Department</span>
-                    </div>
-                  </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-700">Reason for Clearance</label>
+                <input
+                  type="text"
+                  required
+                  value={reason}
+                  onChange={(e) => setReason(e.target.value)}
+                  placeholder="e.g. Graduation & Degree Award"
+                  className="mt-1 w-full text-xs rounded-xl border border-slate-300 px-3 py-2 bg-white"
+                />
+              </div>
 
-                  <button
-                    onClick={() => setShowCreateModal(false)}
-                    className="w-full py-2.5 px-4 rounded-xl text-xs font-bold text-white bg-rgukt-primary hover:bg-rgukt-navy shadow-xs transition"
-                  >
-                    Track Clearance
-                  </button>
-                </div>
-              ) : (
-                <form onSubmit={handleCreateRequest} className="p-6 space-y-4">
-                  {formError && (
-                    <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-700">
-                      {formError}
-                    </div>
-                  )}
-
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700">
-                      1. Academic Year
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={academicYear}
-                      onChange={(e) => setAcademicYear(e.target.value)}
-                      className="mt-1 w-full text-xs rounded-xl border border-slate-300 px-3.5 py-2.5 focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700">
-                      2. Semester Term
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={semester}
-                      onChange={(e) => setSemester(e.target.value)}
-                      className="mt-1 w-full text-xs rounded-xl border border-slate-300 px-3.5 py-2.5 focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700">
-                      3. Reason for Clearance
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={reason}
-                      onChange={(e) => setReason(e.target.value)}
-                      className="mt-1 w-full text-xs rounded-xl border border-slate-300 px-3.5 py-2.5 focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
-                    />
-                  </div>
-
-                  <div className="pt-3 flex justify-end gap-2 border-t border-slate-100">
-                    <button
-                      type="button"
-                      onClick={() => setShowCreateModal(false)}
-                      className="px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-100 rounded-xl transition"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      type="submit"
-                      disabled={submitting}
-                      className="px-4 py-2 text-xs font-bold text-white bg-rgukt-primary hover:bg-rgukt-navy rounded-xl shadow-xs transition disabled:opacity-50"
-                    >
-                      {submitting ? 'Submitting...' : 'Submit Clearance Request'}
-                    </button>
-                  </div>
-                </form>
-              )}
-            </div>
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+                <Button variant="ghost" type="button" onClick={() => setShowCreateModal(false)}>
+                  Cancel
+                </Button>
+                <Button variant="primary" type="submit" isLoading={submitting}>
+                  Submit Request
+                </Button>
+              </div>
+            </form>
           </div>
         </div>
       )}

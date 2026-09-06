@@ -1,83 +1,70 @@
 import React from 'react';
-import { CheckCircle2, Clock, AlertTriangle, XCircle, AlertOctagon, HelpCircle } from 'lucide-react';
-import { TaskStatus, ClearanceStatus } from '../types';
+import { CheckCircle2, Clock, XCircle, AlertTriangle, FileText, MinusCircle } from 'lucide-react';
+import { Badge } from './ui/Badge';
 
 interface StatusBadgeProps {
-  status: TaskStatus | ClearanceStatus | string;
-  size?: 'sm' | 'md' | 'lg';
+  status: string;
+  size?: 'sm' | 'md';
   showIcon?: boolean;
+  className?: string;
 }
 
-export const StatusBadge: React.FC<StatusBadgeProps> = ({ status, size = 'md', showIcon = true }) => {
-  const normalized = status.toUpperCase();
+export const StatusBadge: React.FC<StatusBadgeProps> = ({
+  status,
+  size = 'md',
+  showIcon = true,
+  className = '',
+}) => {
+  const normalized = (status || '').toUpperCase().trim();
 
-  let bg = 'bg-slate-100 text-slate-700 border-slate-200';
-  let Icon = HelpCircle;
-  let label = status;
+  let variant: 'success' | 'warning' | 'error' | 'navy' | 'olive' | 'neutral' = 'neutral';
+  let label = status || 'Not Available';
+  let icon: React.ReactNode = null;
 
   switch (normalized) {
     case 'APPROVED':
+    case 'CLEARED':
     case 'COMPLETED':
-      bg = 'bg-emerald-50 text-emerald-700 border-emerald-200';
-      Icon = CheckCircle2;
-      label = normalized === 'COMPLETED' ? 'Clearance Completed' : 'Approved';
+    case 'ISSUED':
+      variant = 'success';
+      label = normalized === 'APPROVED' ? '✓ Approved' : normalized === 'CLEARED' ? '✓ Cleared' : normalized;
+      icon = showIcon ? <CheckCircle2 className="w-3.5 h-3.5" /> : null;
       break;
-    case 'DELAYED':
-      bg = 'bg-amber-50 text-amber-700 border-amber-200';
-      Icon = Clock;
-      label = 'Delayed';
-      break;
-    case 'REJECTED':
-      bg = 'bg-rose-50 text-rose-700 border-rose-200';
-      Icon = XCircle;
-      label = 'Action Required (Rejected)';
-      break;
+
     case 'PENDING':
-      bg = 'bg-slate-100 text-slate-700 border-slate-200';
-      Icon = Clock;
-      label = 'Pending Verification';
-      break;
     case 'IN_PROGRESS':
-      bg = 'bg-indigo-50 text-indigo-700 border-indigo-200';
-      Icon = Clock;
-      label = 'In Progress';
+    case 'UNDER_REVIEW':
+    case 'AWAITING_VERIFICATION':
+      variant = 'warning';
+      label = normalized === 'IN_PROGRESS' ? '! In Progress' : '! Pending Review';
+      icon = showIcon ? <Clock className="w-3.5 h-3.5" /> : null;
       break;
-    case 'OVERDUE':
-      bg = 'bg-red-50 text-red-700 border-red-200';
-      Icon = AlertOctagon;
-      label = 'SLA Overdue';
+
+    case 'REJECTED':
+    case 'REJECTED_NEEDS_ACTION':
+    case 'ACTION_REQUIRED':
+      variant = 'error';
+      label = normalized.includes('NEEDS_ACTION') ? '× Action Required' : '× Rejected';
+      icon = showIcon ? <XCircle className="w-3.5 h-3.5" /> : null;
       break;
-    case 'BLOCKED':
-      bg = 'bg-purple-50 text-purple-700 border-purple-200';
-      Icon = AlertTriangle;
-      label = 'Blocked';
+
+    case 'NOT_STARTED':
+    case 'SUBMITTED':
+      variant = 'navy';
+      label = normalized === 'NOT_STARTED' ? 'Not Started' : 'Submitted';
+      icon = showIcon ? <MinusCircle className="w-3.5 h-3.5" /> : null;
       break;
+
     default:
-      bg = 'bg-slate-100 text-slate-700 border-slate-200';
-      Icon = HelpCircle;
-      label = status;
+      variant = 'neutral';
+      label = status || 'Awaiting data';
+      icon = showIcon ? <AlertTriangle className="w-3.5 h-3.5" /> : null;
+      break;
   }
 
-  const sizeClasses = {
-    sm: 'text-[11px] px-2 py-0.5 gap-1',
-    md: 'text-xs px-2.5 py-1 gap-1.5',
-    lg: 'text-sm px-3.5 py-1.5 gap-2 font-semibold',
-  };
-
-  const iconSizes = {
-    sm: 'w-3 h-3',
-    md: 'w-3.5 h-3.5',
-    lg: 'w-4 h-4',
-  };
-
   return (
-    <span
-      className={`inline-flex items-center font-medium rounded-full border ${bg} ${sizeClasses[size]}`}
-      role="status"
-      aria-label={`Status: ${label}`}
-    >
-      {showIcon && <Icon className={`${iconSizes[size]} shrink-0`} />}
-      <span>{label}</span>
-    </span>
+    <Badge variant={variant} size={size} icon={icon} className={className}>
+      {label}
+    </Badge>
   );
 };
