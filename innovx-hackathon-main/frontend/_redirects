@@ -1,0 +1,7 @@
+/* Vercel deployments don't need this file, but including for local development redirect handling */
+/* Route all requests to index.html for client-side routing */
+
+/*
+  Vercel will use vercel.json rewrites instead.
+  This file is for reference.
+*/
