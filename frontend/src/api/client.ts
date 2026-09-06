@@ -2,9 +2,9 @@ import axios from 'axios';
 
 // Determine API base URL based on environment
 const getBaseURL = () => {
-  // If VITE_API_URL is set, use it (for Vercel)
-  if (import.meta.env.VITE_API_URL) {
-    return import.meta.env.VITE_API_URL;
+  // If API_URL is set, use it (for Vercel - private environment variable)
+  if (import.meta.env.API_URL) {
+    return import.meta.env.API_URL;
   }
   // Otherwise use relative path (works with Vercel rewrites and local proxy)
   return '/api';
