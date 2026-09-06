@@ -26,3 +26,26 @@
 ::-webkit-scrollbar-thumb:hover {
   background: #94a3b8;
 }
+
+/* Explicit RGUKT Brand Colors for Maximum Contrast & Visibility */
+.bg-rgukt-navy {
+  background-color: #0b1d33 !important;
+}
+.bg-rgukt-primary {
+  background-color: #0f3b6c !important;
+}
+.text-rgukt-primary {
+  color: #0f3b6c !important;
+}
+.border-rgukt-primary {
+  border-color: #0f3b6c !important;
+}
+.bg-rgukt-light {
+  background-color: #e8f1fb !important;
+}
+.hover\:bg-rgukt-navy:hover {
+  background-color: #061221 !important;
+}
+.hover\:text-rgukt-primary:hover {
+  color: #061221 !important;
+}
