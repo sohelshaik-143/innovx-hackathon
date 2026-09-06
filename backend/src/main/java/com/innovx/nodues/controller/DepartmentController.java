@@ -14,21 +14,19 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/departments")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "*")
 @Tag(name = "Departments", description = "Query department information, contacts, and performance KPIs")
 public class DepartmentController {
 
     private final AdminService adminService;
 
-    // 2. MODIFIED THIS LINE: Explicitly handles both path variants (with and without trailing slash)
-    @GetMapping({"", "/"})
-    @Operation(summary = "List all departments", description = "Returns active departments")
+    @GetMapping
+    @Operation(summary = "List all departments", description = "Returns active clearance departments with official contact info")
     public ResponseEntity<List<DepartmentDto>> getAllDepartments() {
         return ResponseEntity.ok(adminService.getAllDepartments());
     }
 
     @GetMapping("/{deptId}/kpis")
-    @Operation(summary = "Get department KPIs", description = "Fetches pending requests count")
+    @Operation(summary = "Get department KPIs", description = "Fetches pending, overdue, delayed, and approved metrics for a department")
     public ResponseEntity<DepartmentKpiDto> getDepartmentKpis(@PathVariable String deptId) {
         return ResponseEntity.ok(adminService.getDepartmentKpi(deptId));
     }
