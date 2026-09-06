@@ -41,6 +41,35 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
     }
 
+    @ExceptionHandler(org.springframework.dao.DataIntegrityViolationException.class)
+    public ResponseEntity<ErrorResponse> handleDataIntegrity(org.springframework.dao.DataIntegrityViolationException ex, HttpServletRequest request) {
+        String fullMsg = ex.getMessage() != null ? ex.getMessage().toLowerCase() : "";
+        String rootMsg = ex.getRootCause() != null && ex.getRootCause().getMessage() != null
+                ? ex.getRootCause().getMessage().toLowerCase()
+                : "";
+        String combined = fullMsg + " " + rootMsg;
+
+        String msg = "A record with these institutional details already exists. Please verify your details or sign in.";
+        if (combined.contains("username") || combined.contains("uq_users_username")) {
+            msg = "Username is already registered. Please choose another username.";
+        } else if (combined.contains("email") || combined.contains("uq_users_email")) {
+            msg = "Institutional email address is already in use. Please sign in or use another email.";
+        } else if (combined.contains("student_id") || combined.contains("studentid") || combined.contains("uq_student_id")) {
+            msg = "Student ID is already registered in the system.";
+        } else if (combined.contains("roll_no") || combined.contains("rollno") || combined.contains("uq_roll_no")) {
+            msg = "University Roll Number is already registered in the system.";
+        }
+
+        ErrorResponse error = ErrorResponse.builder()
+                .status(HttpStatus.CONFLICT.value())
+                .error("Conflict")
+                .message(msg)
+                .timestamp(LocalDateTime.now())
+                .path(request.getRequestURI())
+                .build();
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
+    }
+
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<ErrorResponse> handleAccessDenied(AccessDeniedException ex, HttpServletRequest request) {
         ErrorResponse error = ErrorResponse.builder()

@@ -60,11 +60,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         fullName: authData.fullName,
         roles: authData.roles,
         active: true,
-        demo: authData.isDemo,
+        demo: authData.isDemo ?? (authData as any).demo ?? false,
         departmentId: authData.departmentId,
         departmentCode: authData.departmentCode,
         departmentName: authData.departmentName,
-        head: authData.isHead,
+        head: authData.isHead ?? (authData as any).head ?? false,
         studentId: authData.studentId,
       };
 
@@ -92,11 +92,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         fullName: authData.fullName,
         roles: authData.roles,
         active: true,
-        demo: authData.isDemo,
+        demo: authData.isDemo ?? (authData as any).demo ?? false,
         departmentId: authData.departmentId,
         departmentCode: authData.departmentCode,
         departmentName: authData.departmentName,
-        head: authData.isHead,
+        head: authData.isHead ?? (authData as any).head ?? false,
         studentId: authData.studentId,
       };
 

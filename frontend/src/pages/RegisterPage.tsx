@@ -72,22 +72,53 @@ export const RegisterPage: React.FC = () => {
     e.preventDefault();
     setError(null);
 
+    // Client-side quick validation
+    const trimmedUsername = username.trim();
+    const trimmedEmail = email.trim();
+    const trimmedFullName = fullName.trim();
+
+    if (!trimmedFullName) {
+      setError('Full legal name is required.');
+      return;
+    }
+    if (!trimmedEmail) {
+      setError('Official institutional email address is required.');
+      return;
+    }
+    if (!trimmedUsername) {
+      setError('Username is required.');
+      return;
+    }
+    if (trimmedUsername.length < 3) {
+      setError('Username must be at least 3 characters.');
+      return;
+    }
+    if (!password) {
+      setError('Password is required.');
+      return;
+    }
+    if (password.length < 6) {
+      setError('Password must be at least 6 characters long.');
+      return;
+    }
+
     const payload: any = {
-      username: username.trim(),
-      email: email.trim(),
+      username: trimmedUsername,
+      email: trimmedEmail,
       password,
-      fullName: fullName.trim(),
+      fullName: trimmedFullName,
       portalRole,
     };
 
     if (portalRole === 'STUDENT') {
-      payload.studentId = studentId.trim() || `STU-${Math.floor(1000 + Math.random() * 9000)}`;
-      payload.rollNo = rollNo.trim() || `2024CS${Math.floor(100 + Math.random() * 900)}`;
+      const randomSuffix = Math.floor(10000 + Math.random() * 90000);
+      payload.studentId = studentId.trim() || `STU-2024-${randomSuffix}`;
+      payload.rollNo = rollNo.trim() || `2024CS${randomSuffix}`;
       payload.program = program;
       payload.batchYear = batchYear;
       payload.academicDepartment = program.includes('Computer Science') ? 'Computer Science' : 'Engineering';
     } else if (portalRole === 'STAFF' || portalRole === 'HEAD') {
-      payload.departmentId = departmentId;
+      payload.departmentId = departmentId || (departments[0]?.id ?? 'LIBRARY');
       payload.designation = designation.trim() || (portalRole === 'HEAD' ? 'Department Head' : 'Clearance Verification Officer');
     }
 
@@ -103,7 +134,26 @@ export const RegisterPage: React.FC = () => {
         navigate('/student');
       }
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to create institutional account. Please check your details.');
+      // 1. Check for fieldErrors map from Spring Boot validation
+      const fieldErrors = err.response?.data?.fieldErrors;
+      if (fieldErrors && typeof fieldErrors === 'object') {
+        const fieldMsgs = Object.entries(fieldErrors)
+          .map(([field, msg]) => `${field.charAt(0).toUpperCase() + field.slice(1)}: ${msg}`)
+          .join(' • ');
+        if (fieldMsgs) {
+          setError(fieldMsgs);
+          return;
+        }
+      }
+
+      // 2. Check for custom error message from backend
+      if (err.response?.data?.message) {
+        setError(err.response.data.message);
+        return;
+      }
+
+      // 3. Fallback error
+      setError(err.message || 'Failed to create institutional account. Please check your details.');
     }
   };
 

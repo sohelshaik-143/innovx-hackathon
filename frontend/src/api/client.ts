@@ -22,8 +22,14 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      // If unauthorized and not on login page, clear token
-      if (!window.location.pathname.startsWith('/login') && !window.location.pathname.startsWith('/verify-certificate')) {
+      // If unauthorized and not on public pages, clear token
+      const pathname = window.location.pathname;
+      if (
+        !pathname.startsWith('/login') &&
+        !pathname.startsWith('/register') &&
+        !pathname.startsWith('/create-account') &&
+        !pathname.startsWith('/verify-certificate')
+      ) {
         localStorage.removeItem('nodues_token');
         localStorage.removeItem('nodues_user');
         window.location.href = '/login';

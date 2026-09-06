@@ -100,6 +100,14 @@ public class AuthService {
             String roll = request.getRollNo() != null && !request.getRollNo().isBlank()
                     ? request.getRollNo().trim()
                     : "2024" + stuId.replace("STU-", "");
+
+            if (studentRepository.existsByStudentId(stuId)) {
+                throw new InvalidActionException("Student ID '" + stuId + "' is already registered in the system.");
+            }
+            if (studentRepository.existsByRollNo(roll)) {
+                throw new InvalidActionException("Roll Number '" + roll + "' is already registered in the system.");
+            }
+
             String prog = request.getProgram() != null && !request.getProgram().isBlank()
                     ? request.getProgram().trim()
                     : "B.Tech Engineering Program";
