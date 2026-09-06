@@ -29,10 +29,23 @@ public class ClearanceService {
     private final NotificationService notificationService;
     private final AuditLogService auditLogService;
 
+    public Student findStudent(String studentIdentifier) {
+        if (studentIdentifier == null || studentIdentifier.isBlank()) {
+            return null;
+        }
+        return studentRepository.findById(studentIdentifier)
+                .or(() -> studentRepository.findByStudentId(studentIdentifier))
+                .or(() -> studentRepository.findByUserId(studentIdentifier))
+                .or(() -> studentRepository.findByRollNo(studentIdentifier))
+                .orElse(null);
+    }
+
     @Transactional
     public ClearanceRequestDetailDto createRequest(String studentId, CreateClearanceRequestDto dto) {
-        Student student = studentRepository.findById(studentId)
-                .orElseThrow(() -> new ResourceNotFoundException("Student record not found: " + studentId));
+        Student student = findStudent(studentId);
+        if (student == null) {
+            throw new ResourceNotFoundException("Student record not found: " + studentId);
+        }
 
         // Enforce: Only ONE active clearance request at a time
         List<ClearanceStatus> activeStatuses = List.of(
@@ -113,8 +126,10 @@ public class ClearanceService {
 
     @Transactional(readOnly = true)
     public ClearanceRequestDetailDto getMyActiveRequest(String studentId) {
-        Student student = studentRepository.findById(studentId)
-                .orElseThrow(() -> new ResourceNotFoundException("Student record not found"));
+        Student student = findStudent(studentId);
+        if (student == null) {
+            return null;
+        }
 
         List<ClearanceRequest> requests = clearanceRequestRepository.findByStudentIdOrderByCreatedAtDesc(student.getId());
         if (requests.isEmpty()) {
@@ -135,8 +150,10 @@ public class ClearanceService {
 
     @Transactional(readOnly = true)
     public List<ClearanceRequestSummaryDto> getMyRequests(String studentId) {
-        Student student = studentRepository.findById(studentId)
-                .orElseThrow(() -> new ResourceNotFoundException("Student not found"));
+        Student student = findStudent(studentId);
+        if (student == null) {
+            return List.of();
+        }
 
         return clearanceRequestRepository.findByStudentIdOrderByCreatedAtDesc(student.getId()).stream()
                 .map(this::mapToSummaryDto)

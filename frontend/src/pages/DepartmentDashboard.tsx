@@ -37,8 +37,10 @@ export const DepartmentDashboard: React.FC = () => {
     setLoading(true);
     try {
       // Fetch KPIs
-      const kpiRes = await api.get<DepartmentKpi>(`/departments/${user.departmentId}/kpis`);
-      setKpis(kpiRes.data);
+      const kpiRes = await api.get<DepartmentKpi>(`/departments/${user.departmentId}/kpis`).catch(() => ({ data: null }));
+      if (kpiRes.data) {
+        setKpis(kpiRes.data);
+      }
 
       // Fetch Tasks
       const params: any = {};

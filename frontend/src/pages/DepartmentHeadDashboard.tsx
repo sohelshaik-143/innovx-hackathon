@@ -28,8 +28,10 @@ export const DepartmentHeadDashboard: React.FC = () => {
     if (!user?.departmentId) return;
     setLoading(true);
     try {
-      const kpiRes = await api.get<DepartmentKpi>(`/departments/${user.departmentId}/kpis`);
-      setKpis(kpiRes.data);
+      const kpiRes = await api.get<DepartmentKpi>(`/departments/${user.departmentId}/kpis`).catch(() => ({ data: null }));
+      if (kpiRes.data) {
+        setKpis(kpiRes.data);
+      }
 
       const tasksRes = await api.get<{ content: ClearanceTask[] }>('/tasks', {
         params: { isOverdue: true }

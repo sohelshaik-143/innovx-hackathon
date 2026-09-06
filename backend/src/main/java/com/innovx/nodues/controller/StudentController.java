@@ -25,6 +25,16 @@ import java.util.List;
 public class StudentController {
 
     private final ClearanceService clearanceService;
+    private final com.innovx.nodues.repository.StudentRepository studentRepository;
+
+    private String resolveStudentId(UserPrincipal principal) {
+        if (principal.getStudentId() != null && !principal.getStudentId().isBlank()) {
+            return principal.getStudentId();
+        }
+        return studentRepository.findByUserId(principal.getId())
+                .map(com.innovx.nodues.domain.entity.Student::getId)
+                .orElse(null);
+    }
 
     @PostMapping("/clearance")
     @PreAuthorize("hasRole('STUDENT')")
@@ -32,11 +42,12 @@ public class StudentController {
     public ResponseEntity<ClearanceRequestDetailDto> startClearance(
             @AuthenticationPrincipal UserPrincipal principal,
             @Valid @RequestBody CreateClearanceRequestDto dto) {
-        if (principal.getStudentId() == null) {
-            throw new UnauthorizedException("Authenticated user is not linked to a student profile.");
+        String studentId = resolveStudentId(principal);
+        if (studentId == null) {
+            throw new UnauthorizedException("Authenticated user is not linked to an active student profile.");
         }
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(clearanceService.createRequest(principal.getStudentId(), dto));
+                .body(clearanceService.createRequest(studentId, dto));
     }
 
     @GetMapping("/clearance/active")
@@ -44,10 +55,11 @@ public class StudentController {
     @Operation(summary = "Get active clearance request", description = "Retrieves current active clearance request with department statuses")
     public ResponseEntity<ClearanceRequestDetailDto> getActiveClearance(
             @AuthenticationPrincipal UserPrincipal principal) {
-        if (principal.getStudentId() == null) {
-            throw new UnauthorizedException("Authenticated user is not linked to a student profile.");
+        String studentId = resolveStudentId(principal);
+        if (studentId == null) {
+            return ResponseEntity.ok(null);
         }
-        ClearanceRequestDetailDto active = clearanceService.getMyActiveRequest(principal.getStudentId());
+        ClearanceRequestDetailDto active = clearanceService.getMyActiveRequest(studentId);
         return ResponseEntity.ok(active);
     }
 
@@ -56,9 +68,10 @@ public class StudentController {
     @Operation(summary = "Get clearance history", description = "Lists past and present clearance requests for the authenticated student")
     public ResponseEntity<List<ClearanceRequestSummaryDto>> getClearanceHistory(
             @AuthenticationPrincipal UserPrincipal principal) {
-        if (principal.getStudentId() == null) {
-            throw new UnauthorizedException("Authenticated user is not linked to a student profile.");
+        String studentId = resolveStudentId(principal);
+        if (studentId == null) {
+            return ResponseEntity.ok(List.of());
         }
-        return ResponseEntity.ok(clearanceService.getMyRequests(principal.getStudentId()));
+        return ResponseEntity.ok(clearanceService.getMyRequests(studentId));
     }
 }

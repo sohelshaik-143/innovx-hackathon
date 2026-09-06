@@ -70,19 +70,24 @@ public class AdminService {
 
     @Transactional(readOnly = true)
     public DepartmentKpiDto getDepartmentKpi(String departmentId) {
+        if (departmentId == null || departmentId.isBlank()) {
+            return DepartmentKpiDto.builder().build();
+        }
+
         Department dept = departmentRepository.findById(departmentId)
+                .or(() -> departmentRepository.findByCode(departmentId))
                 .orElseThrow(() -> new ResourceNotFoundException("Department not found: " + departmentId));
 
         LocalDateTime startOfDay = LocalDate.now().atStartOfDay();
         LocalDateTime endOfDay = LocalDate.now().atTime(LocalTime.MAX);
 
-        long pending = taskRepository.countByDepartmentIdAndStatus(departmentId, TaskStatus.PENDING);
-        long dueToday = taskRepository.countDueToday(departmentId, startOfDay, endOfDay);
-        long overdue = taskRepository.countByDepartmentIdAndOverdueTrue(departmentId);
-        long delayed = taskRepository.countByDepartmentIdAndStatus(departmentId, TaskStatus.DELAYED);
-        long approved = taskRepository.countByDepartmentIdAndStatus(departmentId, TaskStatus.APPROVED);
-        long rejected = taskRepository.countByDepartmentIdAndStatus(departmentId, TaskStatus.REJECTED);
-        long unresolvedEscalations = escalationRepository.countByDepartmentIdAndResolvedAtIsNull(departmentId);
+        long pending = taskRepository.countByDepartmentIdAndStatus(dept.getId(), TaskStatus.PENDING);
+        long dueToday = taskRepository.countDueToday(dept.getId(), startOfDay, endOfDay);
+        long overdue = taskRepository.countByDepartmentIdAndOverdueTrue(dept.getId());
+        long delayed = taskRepository.countByDepartmentIdAndStatus(dept.getId(), TaskStatus.DELAYED);
+        long approved = taskRepository.countByDepartmentIdAndStatus(dept.getId(), TaskStatus.APPROVED);
+        long rejected = taskRepository.countByDepartmentIdAndStatus(dept.getId(), TaskStatus.REJECTED);
+        long unresolvedEscalations = escalationRepository.countByDepartmentIdAndResolvedAtIsNull(dept.getId());
 
         return DepartmentKpiDto.builder()
                 .departmentId(dept.getId())

@@ -91,7 +91,7 @@ public class AuthService {
                 .updatedAt(LocalDateTime.now())
                 .build();
 
-        User savedUser = userRepository.save(user);
+        User savedUser = userRepository.saveAndFlush(user);
 
         if (roleType == RoleType.ROLE_STUDENT) {
             String stuId = request.getStudentId() != null && !request.getStudentId().isBlank()
@@ -127,7 +127,7 @@ public class AuthService {
                     .academicDepartment(acadDept)
                     .phoneNumber(request.getPhoneNumber())
                     .build();
-            studentRepository.save(student);
+            studentRepository.saveAndFlush(student);
         } else if (roleType == RoleType.ROLE_DEPARTMENT_STAFF || roleType == RoleType.ROLE_DEPARTMENT_HEAD) {
             Department dept = null;
             if (request.getDepartmentId() != null && !request.getDepartmentId().isBlank()) {
@@ -149,7 +149,7 @@ public class AuthService {
                                 : (roleType == RoleType.ROLE_DEPARTMENT_HEAD ? "Department Head" : "Clearance Verification Officer"))
                         .createdAt(LocalDateTime.now())
                         .build();
-                departmentStaffRepository.save(staff);
+                departmentStaffRepository.saveAndFlush(staff);
             }
         }
 
@@ -202,13 +202,13 @@ public class AuthService {
 
         String studentRoll = null;
         String studentProgram = null;
-        if (principal.getStudentId() != null) {
-            var studOpt = studentRepository.findById(principal.getStudentId());
-            if (studOpt.isPresent()) {
-                Student s = studOpt.get();
-                studentRoll = s.getRollNo();
-                studentProgram = s.getProgram();
-            }
+        var studOpt = studentRepository.findByUserId(user.getId())
+                .or(() -> principal.getStudentId() != null ? studentRepository.findById(principal.getStudentId()) : java.util.Optional.empty())
+                .or(() -> principal.getStudentId() != null ? studentRepository.findByStudentId(principal.getStudentId()) : java.util.Optional.empty());
+        if (studOpt.isPresent()) {
+            Student s = studOpt.get();
+            studentRoll = s.getRollNo();
+            studentProgram = s.getProgram();
         }
 
         String deptName = null;
